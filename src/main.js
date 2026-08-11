@@ -224,7 +224,14 @@ function startGame(freeRoam, loadSaved) {
   }
 }
 
+/* Where a closing panel should hand control back to. openPanel overwrites
+   App.state, so the `state !== ST.MENU` test the close paths used could never
+   see MENU: opening CONTROLS or SYSTEMS from the main menu dropped you into
+   ST.PLAY and grabbed the pointer, before the game had even started. */
+let panelReturn = ST.MENU;
+
 function openPanel(id, state) {
+  if (App.state === ST.MENU || App.state === ST.PLAY) panelReturn = App.state;
   App.state = state;
   $(id).classList.remove('hidden');
   App.input.unlock();
@@ -233,7 +240,8 @@ function openPanel(id, state) {
 }
 function closePanels() {
   for (const id of ['pause', 'codex', 'help']) $(id).classList.add('hidden');
-  if (App.state !== ST.MENU) { App.state = ST.PLAY; App.input.lock(); App.input.showTouch(true); }
+  if (panelReturn === ST.MENU) showMenu();
+  else { App.state = ST.PLAY; App.input.lock(); App.input.showTouch(true); }
 }
 
 function wireUI() {
@@ -247,18 +255,16 @@ function wireUI() {
   $('btnCodexFromPause').onclick = () => { $('pause').classList.add('hidden'); openPanel('codex', ST.CODEX); };
   $('btnAbort').onclick = () => {
     Save.write(App.game.save());
-    closePanels(); $('pause').classList.add('hidden'); showMenu();
+    for (const id of ['pause', 'codex', 'help']) $(id).classList.add('hidden');
+    showMenu();
   };
   $('cardGo').onclick = () => {
     App.hud.hideCard();
     App.state = ST.PLAY; App.input.lock(); App.input.showTouch(true);
     App.audio.ui('ok');
   };
-  document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => {
-    $(b.dataset.close).classList.add('hidden');
-    if (App.state !== ST.MENU) { App.state = ST.PLAY; App.input.lock(); }
-    else showMenu();
-  });
+  // one close path, so the ESC button and the Escape key cannot diverge
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = closePanels);
   addEventListener('beforeunload', () => { if (App.game && App.state >= ST.PLAY) Save.write(App.game.save()); });
 }
 

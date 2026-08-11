@@ -528,12 +528,46 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:2px 6px;border
   .logfeed{max-height:calc(46 * var(--s))}
   /* the auto grid column squeezed this to 92 px and ran INTEGRITY into 100% */
   .sys{flex:0 0 auto;width:calc(178 * var(--s))}
+  /* size to content: stretched, it took the map's height and left a hole */
+  .z-bottom{align-items:flex-start}
+  /* the thumb furniture comes down with the layout */
   /* the thumb furniture comes down with the layout */
   #touch{--stick:calc(96px * (.5 + var(--hud-k) * .5))}
   #touch .stick{bottom:max(10px,env(safe-area-inset-bottom))}
   #touch .stick span{display:none}
-  /* the log spans the full width; keep it out of both button columns */
-  .z-log{padding:0 calc(104 * var(--s))}
+
+  /* Five stacked buttons plus a stick is 300 px of a 370 px screen, so on a
+     real landscape phone the columns climbed straight up the left and right
+     edges into the mission panel and the map. The strip between the two
+     sticks is dead space — put the buttons there in a row instead, and the
+     whole top of the screen is free for the HUD again. */
+  #touch .tbtns,#touch .tbtns2{
+    flex-direction:row;align-items:flex-end;
+    bottom:max(12px,env(safe-area-inset-bottom));
+  }
+  #touch .tbtns2{left:calc(var(--stick) + 40px)}
+  #touch .tbtns{right:calc(var(--stick) + 40px)}
+  #touch .tb{min-width:calc(46 * var(--s));padding:calc(7 * var(--s)) calc(6 * var(--s));
+    font-size:max(8px, calc(8.5 * var(--s)))}
+  #touch .tb.wide{min-width:calc(56 * var(--s))}
+
+  /* Nine buttons plus two sticks need ~740 px of width in one row. Narrower
+     than that — an SE in landscape is 667 — and the two groups walk into each
+     other in the middle, so everything gets tighter. */
+  @media (max-width:790px){
+    #touch .tbtns,#touch .tbtns2{gap:calc(4 * var(--s))}
+    #touch .tbtns2{left:calc(var(--stick) + 22px)}
+    #touch .tbtns{right:calc(var(--stick) + 22px)}
+    #touch .tb{min-width:calc(37 * var(--s));padding:calc(6 * var(--s)) calc(3 * var(--s));
+      letter-spacing:.04em}
+    #touch .tb.wide{min-width:calc(43 * var(--s))}
+  }
+
+  /* nothing sits at the sides above the sticks any more, so the log gets the
+     full width back, and the discovery card drops below the top band */
+  .z-log{padding:0}
+  .discovery{top:50%}
+  .d-name{font-size:max(11px, calc(14 * var(--s)))}
 }
 
 /* menus have to be reachable with a thumb too */

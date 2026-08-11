@@ -303,14 +303,20 @@ The other rule is that **thumbs own the bottom of the screen**. On any device
 that mounts the sticks, the HUD moves above them — keyed on a class set by the
 code that actually creates the controls, not a `pointer: coarse` media query,
 since those two can disagree and the question that matters is whether there are
-thumbsticks on screen right now. A landscape phone is short rather than narrow,
-so there the HUD runs along the top edge instead of stacking down into the
-button columns.
+thumbsticks on screen right now.
+
+A landscape phone is short rather than narrow, and it is the case that breaks
+every assumption. The HUD runs along the top edge there instead of stacking, and
+the **buttons stop being columns**: five stacked buttons plus a stick is 300 px
+of a 370 px screen, so the columns climbed the left and right edges straight
+into the mission panel and the map. They become a single row along the bottom,
+in the dead strip between the two sticks, which hands the entire top of the
+screen back to the HUD.
 
 | viewport | HUD coverage | smallest type |
 |---|--:|--:|
 | 393 × 852 · phone | 22 % | 8.6 px |
-| 852 × 394 · phone, landscape | 25 % | 8.5 px |
+| 932 × 370 · phone, landscape | 27 % | 8.5 px |
 | 375 × 667 · small phone | 34 % | 8.6 px |
 | 820 × 1180 · tablet | 18 % | 8.0 px |
 | 1180 × 820 · tablet, landscape | 28 % | 8.0 px |

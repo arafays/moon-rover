@@ -104,7 +104,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 .dossier-row.alert b{color:var(--red);animation:blink 2.4s steps(1) infinite}
 @keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.25}}
 
-/* ---------------- panels (codex / pause / help) ---------------- */
+/* ---------------- full-screen sheets (codex / pause / help) ----------------
+   Deliberately NOT called .panel: that class is the HUD instrument panel, and
+   it sets position:relative. An overlay carrying both collapsed to a 2 px
+   strip, because .panel is declared later and killed the .overlay inset:0. */
 .panel-head{
   position:absolute;top:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:space-between;
   padding:0 28px;border-bottom:1px solid var(--hair);background:rgba(4,5,10,.7)
@@ -114,8 +117,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
 .x:hover{color:var(--bone);border-color:var(--cyan-dim)}
 .panel-foot{position:absolute;bottom:0;left:0;right:0;padding:16px 28px;display:flex;gap:10px;border-top:1px solid var(--hair);background:rgba(4,5,10,.7)}
 .panel-foot .btn{flex:0 0 auto;padding:11px 18px}
-.overlay.panel{align-items:stretch;justify-content:stretch;padding:0}
-.overlay.panel > *{width:100%}
+.overlay.sheet{align-items:stretch;justify-content:stretch;padding:0}
+.overlay.sheet > *{width:100%}
 
 .settings{position:absolute;inset:62px 0 82px 0;overflow-y:auto;padding:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;align-content:start}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 15px;border:1px solid var(--hair);background:rgba(216,210,198,.02)}

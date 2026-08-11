@@ -521,18 +521,19 @@ kbd{display:inline-block;min-width:20px;text-align:center;padding:2px 6px;border
     }
   }
   .hud .drive{display:none}
-  .map canvas{width:calc(92 * var(--s));height:calc(92 * var(--s))}
+  .map canvas{width:calc(68 * var(--s));height:calc(68 * var(--s))}
   .mission h3{font-size:max(10.5px, calc(12 * var(--s)));margin:0 0 calc(3 * var(--s))}
-  /* two whole lines — a max-height between multiples leaves the top line
-     sliced in half, which reads as a rendering fault rather than a scroll */
-  .logfeed{max-height:calc(46 * var(--s))}
+  /* One line here, not two. On a 353 px screen the HUD ran to 45 % of the
+     height and the thumbs began at 70 %, leaving an 88 px slot of actual game
+     between them. Every row above is bought out of that slot. */
+  .logfeed{max-height:calc(24 * var(--s))}
   /* the auto grid column squeezed this to 92 px and ran INTEGRITY into 100% */
   .sys{flex:0 0 auto;width:calc(178 * var(--s))}
   /* size to content: stretched, it took the map's height and left a hole */
   .z-bottom{align-items:flex-start}
   /* the thumb furniture comes down with the layout */
   /* the thumb furniture comes down with the layout */
-  #touch{--stick:calc(96px * (.5 + var(--hud-k) * .5))}
+  #touch{--stick:calc(84px * (.5 + var(--hud-k) * .5))}
   #touch .stick{bottom:max(10px,env(safe-area-inset-bottom))}
   #touch .stick span{display:none}
 

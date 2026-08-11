@@ -1,0 +1,420 @@
+/* ============================================================
+   REGOLITH — mission-control UI
+   Palette: vacuum black, regolith bone, telemetry cyan, caution amber
+   ============================================================ */
+:root{
+  --void:#04050a;
+  --bone:#d8d2c6;
+  --bone-dim:#8b8578;
+  --cyan:#6fe3f5;
+  --cyan-dim:#2b6a76;
+  --amber:#ffb454;
+  --red:#ff5f56;
+  --green:#8ff08a;
+  --hair:rgba(216,210,198,.13);
+  --hair2:rgba(216,210,198,.26);
+  --panel:rgba(6,8,13,.82);
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--void);}
+body{
+  font-family:var(--mono);
+  color:var(--bone);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  user-select:none;
+  touch-action:none;
+}
+canvas#stage{position:fixed;inset:0;width:100%;height:100%;display:block;background:#000;}
+
+.hidden{display:none !important;}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+
+/* ---------------- overlays ---------------- */
+/* reduced motion: nothing here is load-bearing, so just stop it moving */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+
+.overlay{
+  position:fixed;inset:0;z-index:40;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 100% at 50% 20%, rgba(12,16,26,.88), rgba(2,3,6,.97));
+  backdrop-filter:blur(7px) saturate(.7);
+  animation:fadein .4s ease;
+}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.overlay::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);
+  mix-blend-mode:overlay;opacity:.45;
+}
+
+/* ---------------- boot ---------------- */
+.boot .boot-inner{text-align:center;max-width:560px;padding:32px;}
+.crest{color:var(--bone);opacity:.75;margin-bottom:20px;animation:spin 44s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.title{
+  font-size:clamp(38px,7vw,72px);letter-spacing:.42em;font-weight:400;
+  margin-right:-.42em;
+}
+.title.big{font-size:clamp(44px,6vw,78px)}
+.subtitle{margin-top:14px;color:var(--bone-dim);letter-spacing:.30em;font-size:12px;text-transform:uppercase}
+.loadbar{margin:34px auto 10px;width:min(420px,70vw);height:2px;background:rgba(216,210,198,.12);overflow:hidden}
+.loadbar i{display:block;height:100%;width:0%;background:var(--cyan);transition:width .25s ease}
+.loadtext{font-size:11px;letter-spacing:.18em;color:var(--bone-dim);text-transform:uppercase;min-height:1.2em}
+.legal{margin-top:38px;font-size:9.5px;letter-spacing:.24em;color:rgba(216,210,198,.30)}
+
+/* ---------------- menu ---------------- */
+.menu-grid{
+  width:min(1120px,92vw);display:grid;grid-template-columns:1.35fr .85fr;gap:56px;align-items:center;
+  padding:28px;
+}
+.brief{margin:26px 0 30px;font-size:13px;line-height:1.85;color:#a8a396;max-width:52ch;}
+.brief b{color:var(--bone);font-weight:400;border-bottom:1px solid var(--cyan-dim)}
+.brief em{color:var(--amber);font-style:normal}
+.menu-actions{display:flex;flex-direction:column;gap:9px;max-width:330px}
+.hint{margin-top:26px;font-size:10px;letter-spacing:.2em;color:rgba(216,210,198,.32)}
+
+.btn{
+  position:relative;padding:13px 20px;letter-spacing:.22em;font-size:12px;
+  border:1px solid var(--hair2);background:rgba(216,210,198,.03);
+  text-align:left;transition:background .16s ease,border-color .16s ease,color .16s ease;overflow:hidden;
+}
+.btn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);opacity:0;transition:opacity .16s}
+.btn:hover{background:rgba(111,227,245,.08);border-color:var(--cyan-dim)}
+.btn:hover::before{opacity:1}
+.btn.primary{border-color:var(--cyan-dim);background:rgba(111,227,245,.10);color:#dff8fd}
+.btn.primary:hover{background:rgba(111,227,245,.18)}
+.btn.ghost{border-color:var(--hair);color:var(--bone-dim)}
+.btn.ghost:hover{color:var(--bone)}
+.btn.danger:hover{border-color:rgba(255,95,86,.5);background:rgba(255,95,86,.10);color:#ffb8b3}
+
+.dossier{border:1px solid var(--hair);padding:22px;background:rgba(216,210,198,.02)}
+.dossier-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px dashed var(--hair);font-size:11px;letter-spacing:.14em}
+.dossier-row:last-child{border-bottom:none}
+.dossier-row span{color:rgba(216,210,198,.42)}
+.dossier-row b{font-weight:400}
+.dossier-row.alert b{color:var(--red);animation:blink 2.4s steps(1) infinite}
+@keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.25}}
+
+/* ---------------- panels (codex / pause / help) ---------------- */
+.panel-head{
+  position:absolute;top:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;border-bottom:1px solid var(--hair);background:rgba(4,5,10,.7)
+}
+.panel-head h2{font-size:13px;letter-spacing:.34em;font-weight:400}
+.x{font-size:10px;letter-spacing:.2em;border:1px solid var(--hair2);padding:6px 11px;color:var(--bone-dim)}
+.x:hover{color:var(--bone);border-color:var(--cyan-dim)}
+.panel-foot{position:absolute;bottom:0;left:0;right:0;padding:16px 28px;display:flex;gap:10px;border-top:1px solid var(--hair);background:rgba(4,5,10,.7)}
+.panel-foot .btn{flex:0 0 auto;padding:11px 18px}
+.overlay.panel{align-items:stretch;justify-content:stretch;padding:0}
+.overlay.panel > *{width:100%}
+
+.settings{position:absolute;inset:62px 0 82px 0;overflow-y:auto;padding:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;align-content:start}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 15px;border:1px solid var(--hair);background:rgba(216,210,198,.02)}
+.set-row label{font-size:10.5px;letter-spacing:.16em;color:#b4afa3}
+.set-row small{display:block;color:rgba(216,210,198,.34);letter-spacing:.04em;margin-top:4px;font-size:9.5px}
+.seg{display:flex;border:1px solid var(--hair2);flex:0 0 auto}
+.seg button{padding:7px 11px;font-size:9.5px;letter-spacing:.12em;color:var(--bone-dim)}
+.seg button.on{background:rgba(111,227,245,.14);color:#dff8fd}
+input[type=range]{-webkit-appearance:none;width:120px;height:2px;background:var(--hair2);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--cyan);cursor:pointer}
+
+.keys{position:absolute;inset:62px 0 0 0;overflow-y:auto;padding:32px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px 34px;align-content:start}
+.keygroup h4{font-size:9.5px;letter-spacing:.3em;color:var(--cyan);margin-bottom:12px;font-weight:400}
+.keyrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--hair);font-size:11px}
+.keyrow span{color:rgba(216,210,198,.55)}
+kbd{display:inline-block;min-width:20px;text-align:center;padding:2px 6px;border:1px solid var(--hair2);border-bottom-width:2px;font-size:10px;letter-spacing:.04em;background:rgba(216,210,198,.05)}
+
+.codex-body{position:absolute;inset:62px 0 0 0;display:grid;grid-template-columns:320px 1fr}
+.codex-list{list-style:none;overflow-y:auto;border-right:1px solid var(--hair);padding:12px 0}
+.codex-list li{padding:12px 24px;font-size:11px;letter-spacing:.08em;cursor:pointer;border-left:2px solid transparent;color:var(--bone-dim)}
+.codex-list li:hover{background:rgba(216,210,198,.04);color:var(--bone)}
+.codex-list li.on{border-left-color:var(--cyan);background:rgba(111,227,245,.06);color:#dff8fd}
+.codex-list li.locked{opacity:.32;cursor:default;font-style:italic}
+.codex-list li small{display:block;font-size:8.5px;letter-spacing:.22em;color:var(--cyan-dim);margin-bottom:3px}
+.codex-read{overflow-y:auto;padding:42px 54px;max-width:78ch;line-height:1.95;font-size:13px;color:#a8a396}
+.codex-read h3{color:var(--bone);font-size:18px;letter-spacing:.16em;font-weight:400;margin-bottom:6px}
+.codex-read .meta{font-size:9.5px;letter-spacing:.24em;color:var(--cyan-dim);margin-bottom:26px}
+.codex-read p{margin-bottom:16px}
+.codex-read p.sig{color:var(--bone-dim);border-left:2px solid var(--hair2);padding-left:16px;font-style:italic}
+
+/* ---------------- mission card ---------------- */
+.card{background:rgba(2,3,6,.88)}
+.card-inner{width:min(660px,88vw);border:1px solid var(--hair2);background:var(--panel);padding:44px 46px;position:relative}
+.card-inner::before{content:"";position:absolute;left:-1px;top:-1px;width:30px;height:30px;border-left:2px solid var(--cyan);border-top:2px solid var(--cyan)}
+.card-inner::after{content:"";position:absolute;right:-1px;bottom:-1px;width:30px;height:30px;border-right:2px solid var(--cyan);border-bottom:2px solid var(--cyan)}
+.card-kicker{font-size:9.5px;letter-spacing:.36em;color:var(--cyan)}
+.card-title{font-size:28px;letter-spacing:.2em;font-weight:400;margin:12px 0 20px}
+.card-text{font-size:13px;line-height:1.9;color:#a8a396;margin-bottom:24px}
+.card-obj{border-top:1px solid var(--hair);padding-top:16px;margin-bottom:28px}
+.card-obj div{font-size:11px;letter-spacing:.08em;padding:5px 0;color:#b4afa3}
+.card-obj div::before{content:"▸ ";color:var(--amber)}
+
+/* ============================================================
+   HUD — a three-row grid. Every panel owns a cell, so nothing can
+   drift underneath anything else at any window size.
+   ============================================================ */
+.hud{
+  position:fixed;inset:0;z-index:20;pointer-events:none;
+  display:grid;
+  /* minmax(0,1fr) on the middle column: a 1fr track's automatic minimum is
+     min-content, and the 660 px compass canvas would otherwise pin the grid
+     wider than the window and shove the right-hand rail off-screen. */
+  grid-template-columns:minmax(268px,326px) minmax(0,1fr) minmax(288px,318px);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  grid-template-areas:
+    "mission compass clock"
+    "log     .       rail"
+    "bottom  bottom  bottom";
+  padding:16px 20px;
+  gap:12px 18px;
+  font-size:11px;letter-spacing:.08em;
+  transition:opacity .25s ease;
+}
+.hud > div{min-width:0}
+.z-mission{grid-area:mission;align-self:start}
+.z-compass{grid-area:compass;align-self:start;justify-self:center}
+.z-clock  {grid-area:clock;align-self:start;justify-self:end}
+.z-log    {grid-area:log;align-self:end;min-height:0}
+.z-rail   {grid-area:rail;align-self:start;justify-self:end;display:flex;flex-direction:column;gap:10px}
+.z-bottom {grid-area:bottom;display:flex;gap:12px;align-items:flex-end;flex-wrap:nowrap;overflow:hidden}
+
+/* ---------------- shared panel ---------------- */
+.panel{
+  border:1px solid var(--hair);
+  background:linear-gradient(180deg,rgba(10,13,19,.76),rgba(6,8,12,.62));
+  backdrop-filter:blur(4px);
+  padding:9px 12px 10px;
+  position:relative;
+}
+.panel::before{content:"";position:absolute;left:-1px;top:-1px;width:16px;height:1px;background:var(--cyan);opacity:.5}
+.panel > header{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-size:8.5px;letter-spacing:.26em;color:rgba(216,210,198,.40);
+  padding-bottom:7px;margin-bottom:8px;border-bottom:1px solid var(--hair);
+  white-space:nowrap;
+}
+.panel > header b{font-weight:400;color:var(--cyan);letter-spacing:.12em;font-variant-numeric:tabular-nums}
+
+/* ---------------- mission ---------------- */
+.mission{border-left:2px solid var(--amber)}
+.mission > header{border-bottom:none;padding-bottom:0;margin-bottom:3px;color:var(--amber);letter-spacing:.30em}
+.mission h3{font-size:15px;letter-spacing:.20em;font-weight:400;margin:1px 0 9px;color:var(--bone)}
+.mission-obj div{
+  display:grid;grid-template-columns:11px 1fr;gap:6px;align-items:baseline;
+  font-size:10.5px;letter-spacing:.03em;padding:2.5px 0;color:rgba(216,210,198,.66);
+}
+.mission-obj .done{color:rgba(143,240,138,.58);text-decoration:line-through}
+.mission-obj i{font-style:normal;color:var(--amber);opacity:.85}
+.mission-obj .done i{color:var(--green);opacity:.7}
+.mission-obj small{display:block;color:rgba(216,210,198,.30);letter-spacing:.01em;font-size:9.5px;text-decoration:none}
+
+/* ---------------- clock ---------------- */
+.clock{min-width:206px}
+.clock .row{display:flex;justify-content:space-between;gap:16px;padding:2.5px 0;font-size:10px}
+.clock .row span{color:rgba(216,210,198,.36);letter-spacing:.18em}
+.clock .row b{font-weight:400;color:var(--bone);font-variant-numeric:tabular-nums}
+.hud{color:var(--bone)}
+
+/* ---------------- compass ---------------- */
+.z-compass{overflow:hidden}
+.z-compass canvas{display:block;opacity:.95;max-width:100%}
+
+/* ---------------- right rail ---------------- */
+.map canvas{display:block}
+.bay .baygrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.slot{aspect-ratio:1;border:1px solid var(--hair2);position:relative;background:rgba(216,210,198,.02)}
+.slot.full{border-color:var(--cyan-dim);background:rgba(111,227,245,.10)}
+.slot.full::after{content:"";position:absolute;inset:28%;background:var(--cyan);opacity:.7;
+  clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.slot.rare.full{border-color:rgba(255,180,84,.55);background:rgba(255,180,84,.11)}
+.slot.rare.full::after{background:var(--amber)}
+
+/* ---------------- systems ---------------- */
+.sys{width:214px;height:168px}
+.gauge{margin-bottom:9px;overflow:hidden}
+.gauge label{font-size:8.5px;letter-spacing:.20em;color:rgba(216,210,198,.42)}
+.gauge b{float:right;font-size:10px;font-weight:400;color:var(--bone);font-variant-numeric:tabular-nums}
+.gauge .bar{clear:both;height:3px;margin-top:5px;background:rgba(216,210,198,.10);position:relative;overflow:hidden}
+.gauge .bar i{position:absolute;inset:0;transform-origin:left;background:var(--cyan);
+  transition:transform .22s ease,background .3s}
+.gauge.warn .bar i{background:var(--amber)}
+.gauge.crit .bar i{background:var(--red);animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:1px}
+.chip{font-size:8px;letter-spacing:.14em;padding:2.5px 6px;border:1px solid var(--hair2);
+  color:rgba(216,210,198,.42);white-space:nowrap}
+.chip.on{border-color:var(--cyan-dim);color:var(--cyan);background:rgba(111,227,245,.08)}
+
+/* ---------------- instrument cluster ---------------- */
+.inst{height:168px;display:flex;flex-direction:column;justify-content:flex-end}
+.inst canvas{display:block}
+.drive{padding:9px 10px}
+.gpr{background:linear-gradient(180deg,rgba(6,12,16,.82),rgba(4,7,11,.66))}
+
+/* ---------------- log feed ---------------- */
+.logfeed{display:flex;flex-direction:column-reverse;gap:4px;max-height:168px;overflow:hidden}
+.logline{
+  font-size:10.5px;letter-spacing:.03em;color:rgba(216,210,198,.80);
+  padding:4px 9px;border-left:2px solid var(--cyan-dim);
+  background:linear-gradient(90deg,rgba(8,11,17,.74),rgba(8,11,17,0));
+  animation:slidein .26s ease;
+}
+.logline.warn{border-left-color:var(--amber);color:#e8cfa6}
+.logline.bad{border-left-color:var(--red);color:#e8b0ab}
+.logline.good{border-left-color:var(--green);color:#bfe6bc}
+.logline.fade{opacity:0;transition:opacity .8s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+
+/* ---------------- centre overlays ---------------- */
+.hud > .reticle,.hud > .prompt,.hud > .vig,.hud > .discovery{position:absolute}
+.reticle{left:50%;top:50%;width:3px;height:3px;margin:-1.5px;border-radius:50%;
+  background:rgba(216,210,198,.45);box-shadow:0 0 5px rgba(0,0,0,.9)}
+.prompt{left:50%;top:calc(50% + 44px);transform:translateX(-50%);
+  padding:7px 15px;border:1px solid var(--hair2);background:rgba(8,11,17,.80);
+  font-size:10.5px;letter-spacing:.12em;white-space:nowrap}
+.prompt kbd{margin:0 1px}
+
+.vig{inset:0;pointer-events:none;box-shadow:inset 0 0 220px rgba(0,0,0,0);transition:box-shadow .35s ease}
+.vig.hit{box-shadow:inset 0 0 220px rgba(255,60,50,.5)}
+
+.discovery{left:50%;top:30%;transform:translateX(-50%);text-align:center;
+  animation:disc .5s cubic-bezier(.2,.9,.2,1)}
+@keyframes disc{from{opacity:0;transform:translateX(-50%) scale(.94)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.d-kicker{font-size:9px;letter-spacing:.40em;color:var(--cyan)}
+.d-name{font-size:23px;letter-spacing:.24em;margin:9px 0 5px}
+.d-sub{font-size:10px;letter-spacing:.14em;color:rgba(216,210,198,.52);max-width:46ch;margin:0 auto;line-height:1.6}
+
+/* ---------------- responsive ---------------- */
+@media (max-width:1500px){
+  .hud .wheels{display:none}
+}
+@media (max-width:1120px){
+  .hud .gpr{display:none}
+}
+@media (max-width:1180px){
+  .menu-grid{grid-template-columns:1fr;gap:30px}
+  .menu-right{display:none}
+  .hud{grid-template-columns:minmax(230px,280px) minmax(0,1fr) 246px}
+  .map canvas{width:216px;height:216px}
+  .codex-body{grid-template-columns:250px 1fr}
+  .codex-read{padding:30px 32px}
+}
+@media (max-width:900px){
+  .hud{grid-template-columns:minmax(0,1fr) 0 196px;padding:12px 14px;gap:8px 10px}
+  .hud .gpr,.hud .z-compass{display:none}
+  .map canvas{width:176px;height:176px}
+  .logfeed{max-height:110px}
+  .sys,.inst{height:150px}
+}
+
+/* ============================================================
+   touch controls — only mounted on coarse-pointer devices
+   ============================================================ */
+#touch{position:fixed;inset:0;z-index:26;pointer-events:none;
+  padding:0 max(14px,env(safe-area-inset-left)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-right))}
+#touch .stick{position:absolute;bottom:max(18px,env(safe-area-inset-bottom));
+  width:126px;height:126px;border:1px solid var(--hair2);border-radius:50%;
+  pointer-events:auto;background:rgba(8,11,17,.34);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;touch-action:none}
+#touch .stick.left{left:max(18px,env(safe-area-inset-left))}
+#touch .stick.right{right:max(18px,env(safe-area-inset-right))}
+#touch .stick span{position:absolute;bottom:-15px;font-size:7.5px;letter-spacing:.24em;
+  color:rgba(216,210,198,.34)}
+#touch .nub{position:absolute;width:50px;height:50px;border-radius:50%;
+  background:rgba(111,227,245,.18);border:1px solid var(--cyan-dim)}
+#touch .tbtns,#touch .tbtns2{position:absolute;display:flex;gap:7px;pointer-events:auto}
+#touch .tbtns{right:max(18px,env(safe-area-inset-right));bottom:158px;flex-direction:column;align-items:flex-end}
+#touch .tbtns2{left:max(18px,env(safe-area-inset-left));bottom:158px;flex-direction:column}
+#touch .tb{min-width:66px;padding:10px 12px;border:1px solid var(--hair2);
+  font-size:9px;letter-spacing:.14em;background:rgba(8,11,17,.62);color:var(--bone-dim);
+  backdrop-filter:blur(3px);touch-action:none;text-align:center}
+#touch .tb.on{border-color:var(--cyan);color:var(--cyan);background:rgba(111,227,245,.16)}
+#touch .tb.wide{min-width:86px}
+
+/* ---- phones ----
+   The bottom third belongs to the thumbs, full stop. So the HUD is re-laid into
+   the TOP of the screen as a two-column stack and the instrument cluster is
+   pared back to what you can actually read at arm's length. */
+@media (max-width:700px), (max-height:520px){
+  .hud{
+    grid-template-columns:minmax(0,1fr) minmax(116px,146px);
+    grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-areas:
+      "mission clock"
+      "bottom  rail"
+      "log     log";
+    align-content:start;
+    padding:max(7px,env(safe-area-inset-top)) 9px 0 9px;
+    gap:6px 8px;
+  }
+  .hud .z-compass,.hud .wheels,.hud .gpr,.hud .bay{display:none}
+  .z-bottom{grid-area:bottom;align-items:stretch;gap:7px}
+  .z-log{grid-area:log;align-self:start}
+  .panel{padding:6px 8px 7px}
+  .panel > header{font-size:7.5px;letter-spacing:.16em;padding-bottom:4px;margin-bottom:5px}
+  .mission h3{font-size:12px;letter-spacing:.13em;margin:0 0 4px}
+  .mission-obj div{font-size:9px;padding:1.5px 0;grid-template-columns:9px 1fr;gap:4px}
+  .mission-obj small{display:none}
+  .clock{min-width:0}
+  .clock .row{font-size:8.5px;gap:6px;padding:1px 0}
+  .clock .row span{letter-spacing:.10em}
+  .map canvas{width:128px;height:128px}
+  .sys{width:auto;height:auto;flex:1 1 auto;min-width:0}
+  .gauge{margin-bottom:5px}
+  .gauge label{font-size:7.5px;letter-spacing:.14em}
+  .gauge b{font-size:9px}
+  .chips{gap:3px}
+  .chip{font-size:7px;padding:2px 4px;letter-spacing:.08em}
+  .inst{height:auto;justify-content:center}
+  .drive{padding:5px 6px;flex:0 0 auto}
+  .drive canvas{width:96px;height:96px}
+  .logfeed{max-height:60px;gap:3px}
+  .logline{font-size:9px;padding:3px 6px;letter-spacing:0}
+  .prompt{font-size:9px;padding:5px 10px;top:auto;bottom:calc(46% )}
+  .reticle{opacity:.65}
+  .discovery{top:24%}
+  .d-name{font-size:16px;letter-spacing:.16em}
+  .d-sub{font-size:8.5px;max-width:32ch}
+}
+
+/* short viewport (landscape phone): almost no vertical room, so the dial goes,
+   the map shrinks, and the thumb furniture comes down with it */
+@media (max-height:520px){
+  .hud{gap:4px 8px;padding-top:max(5px,env(safe-area-inset-top))}
+  .hud .drive,.hud .chips{display:none}
+  .map canvas{width:100px;height:100px}
+  .mission h3{font-size:11px;margin:0 0 3px}
+  .mission-obj div{font-size:8.5px;padding:1px 0}
+  .logfeed{max-height:36px}
+  .gauge{margin-bottom:4px}
+  #touch .stick{width:100px;height:100px;bottom:max(10px,env(safe-area-inset-bottom))}
+  #touch .nub{width:40px;height:40px}
+  #touch .tbtns,#touch .tbtns2{bottom:118px;gap:5px}
+  #touch .tb{min-width:56px;padding:6px 8px;font-size:8px}
+  #touch .stick span{display:none}
+}
+
+/* menus have to be reachable with a thumb too */
+@media (max-width:700px), (max-height:520px){
+  .menu-grid{padding:18px;gap:18px}
+  .menu-actions{max-width:none}
+  .btn{padding:14px 16px;font-size:11px}
+  .brief{font-size:11.5px;line-height:1.7;margin:16px 0 20px}
+  .title{letter-spacing:.30em;margin-right:-.30em}
+  .panel-head{height:52px;padding:0 16px}
+  .settings{inset:52px 0 74px 0;padding:14px;grid-template-columns:1fr;gap:8px}
+  .keys{inset:52px 0 0 0;padding:18px 14px;grid-template-columns:1fr;gap:18px}
+  .codex-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .codex-list{max-height:34vh;border-right:none;border-bottom:1px solid var(--hair)}
+  .codex-read{padding:20px 18px;font-size:12px;line-height:1.8}
+  .card-inner{padding:24px 20px}
+  .card-title{font-size:20px}
+  .card-text{font-size:11.5px;line-height:1.75}
+  .panel-foot{padding:10px 14px;gap:6px;flex-wrap:wrap}
+  .panel-foot .btn{padding:9px 12px;font-size:10px}
+}

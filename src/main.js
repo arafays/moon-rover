@@ -623,7 +623,7 @@ function stepWorld(dt, raw, input) {
   props.update(dt, App.elapsed, engine.camera);
   game.update(dt, ctl, input);
   rig.update(dt, rover, {
-    lookX: raw.lookX, lookY: raw.lookY, zoom: raw.zoom,
+    lookX: raw.lookX, lookY: raw.lookY, zoom: raw.zoom, looking: raw.looking,
     boost: input.down('ShiftLeft', 'ShiftRight'),
     up: input.down('KeyQ'), down: input.down('KeyZ')
   }, photo ? { throttle: raw.throttle, steer: raw.steer } : { throttle: 0, steer: 0 });

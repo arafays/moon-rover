@@ -50,8 +50,12 @@ export class CameraRig {
     this.yaw -= input.lookX * s;
     this.pitch = clamp(this.pitch + input.lookY * s * inv, -1.15, 1.25);
     if (input.zoom) this.dist = clamp(this.dist + input.zoom * 0.9, 2.6, 26);
-    // any real look input resets the idle clock that gates auto-centring
-    this.lookIdle = (Math.abs(input.lookX) + Math.abs(input.lookY) > 0.6) ? 0 : this.lookIdle + dt;
+    // Any real look input resets the idle clock that gates auto-centring.
+    // Driven by an explicit flag from the input layer rather than a magnitude
+    // threshold: lookX/lookY are in mouse pixels, and a thumbstick at a third
+    // of its travel never cleared the old 0.6 bar, so auto-centre fought the
+    // stick instead of standing down.
+    this.lookIdle = input.looking ? 0 : this.lookIdle + dt;
 
     const rp = rover.pos;
     const speed = rover.vel.length();

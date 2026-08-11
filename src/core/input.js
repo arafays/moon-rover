@@ -140,7 +140,13 @@ export class Input {
   poll() {
     const out = {
       throttle: 0, steer: 0, brake: 0,
-      lookX: 0, lookY: 0, zoom: 0
+      lookX: 0, lookY: 0, zoom: 0,
+      // Whether the operator is actively aiming the view. The camera used to
+      // infer this from the magnitude of lookX/lookY, but that number is in
+      // mouse pixels — a thumbstick pushed a third of the way produces a
+      // smaller value than a nudge of the mouse, so auto-centre never stood
+      // down and dragged the view back while you were still pushing.
+      looking: false
     };
     // keyboard
     if (this.down('KeyW', 'ArrowUp')) out.throttle += 1;
@@ -152,6 +158,7 @@ export class Input {
     // mouse look
     out.lookX = this.mouse.dx; out.lookY = this.mouse.dy;
     out.zoom = this.mouse.wheel;
+    if (this.mouse.dx || this.mouse.dy) out.looking = true;
     this.mouse.dx = 0; this.mouse.dy = 0; this.mouse.wheel = 0;
 
     // touch
@@ -159,8 +166,9 @@ export class Input {
       out.throttle += -this.touch.ly;
       out.steer += this.touch.lx;
       // rate, not position: hold it over and the view keeps turning
-      out.lookX += this.touch.rx * Math.abs(this.touch.rx) * 26;
-      out.lookY += this.touch.ry * Math.abs(this.touch.ry) * 22;
+      out.lookX += this.touch.rx * Math.abs(this.touch.rx) * 17;
+      out.lookY += this.touch.ry * Math.abs(this.touch.ry) * 14;
+      if (Math.hypot(this.touch.rx, this.touch.ry) > 0.06) out.looking = true;
     }
 
     // gamepad
@@ -173,6 +181,7 @@ export class Input {
         if (Math.abs(dz(gp.axes[1] || 0)) > 0.01 && !(gp.buttons[7]?.value)) out.throttle += -dz(gp.axes[1]);
         out.lookX += dz(gp.axes[2] || 0) * 13;
         out.lookY += dz(gp.axes[3] || 0) * 13;
+        if (Math.abs(dz(gp.axes[2] || 0)) + Math.abs(dz(gp.axes[3] || 0)) > 0.02) out.looking = true;
         if (gp.buttons[0]?.pressed) out.brake = 1;
         const map = { 2: 'KeyG', 3: 'KeyR', 1: 'KeyF', 9: 'Escape', 8: 'Tab', 4: 'KeyC', 5: 'KeyB' };
         for (const [b, code] of Object.entries(map)) {

@@ -75,9 +75,13 @@ export class Input {
         <button class="tb" data-k="KeyC">CAM</button>
         <button class="tb" data-k="KeyF">LAMP</button>
         <button class="tb" data-k="KeyT">ARRAY</button>
+        <button class="tb" data-k="KeyH">HUD</button>
         <button class="tb wide" data-k="Space" data-hold="1">BRAKE</button>
       </div>`;
     document.body.appendChild(wrap);
+    // the stylesheet keeps the HUD clear of the thumb zone off this class, so
+    // it is set by the code that puts the sticks on screen and nothing else
+    document.body.classList.add('touch-controls');
     this.touchEl = wrap;
     this.touch.active = true;
 

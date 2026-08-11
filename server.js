@@ -28,13 +28,15 @@ const SHOT_DIR = process.env.SHOT_DIR || path.join(ROOT, '.shots');
 const server = http.createServer((req, res) => {
   if (SHOTS && req.method === 'POST' && req.url.startsWith('/__shot')) {
     let body = '';
-    req.on('data', (c) => { body += c; if (body.length > 40e6) req.destroy(); });
+    req.on('data', (c) => { body += c; if (body.length > 400e6) req.destroy(); });
     req.on('end', () => {
       try {
-        const name = (new URL(req.url, 'http://x').searchParams.get('n') || 'shot').replace(/[^\w.-]/g, '');
-        const b64 = body.replace(/^data:image\/\w+;base64,/, '');
+        const q = new URL(req.url, 'http://x').searchParams;
+        const name = (q.get('n') || 'shot').replace(/[^\w.-]/g, '');
+        const ext = (q.get('ext') || 'png').replace(/[^\w]/g, '');
+        const b64 = body.replace(/^data:[\w/+.-]+;base64,/, '');
         fs.mkdirSync(SHOT_DIR, { recursive: true });
-        fs.writeFileSync(path.join(SHOT_DIR, name + '.png'), Buffer.from(b64, 'base64'));
+        fs.writeFileSync(path.join(SHOT_DIR, `${name}.${ext}`), Buffer.from(b64, 'base64'));
         res.writeHead(200).end('ok');
       } catch (e) { res.writeHead(500).end(String(e)); }
     });

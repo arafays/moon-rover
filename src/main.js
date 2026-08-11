@@ -27,7 +27,8 @@ const App = {
   settings: Object.assign({
     quality: guessQuality(), fov: 58, sens: 1.0, invertY: false,
     bloom: true, grain: 1.0, aberr: 1.0, stars: 1.0,
-    volSfx: 0.8, volMusic: 0.5, music: true, tc: true, hudOn: true, autoCentre: 1
+    volSfx: 0.8, volMusic: 0.5, music: true, tc: true, hudOn: true, autoCentre: 1,
+    hudScale: 1
   }, Save.settings()),
   elapsed: 0, sunAz: 4.35, paused: false
 };
@@ -291,6 +292,9 @@ function buildSettingsUI() {
     () => S.aberr ? 1 : 0, (i) => { S.aberr = i ? 1 : 0; applySettings(); persist(); });
   seg('STARFIELD', 'cinematic keeps stars visible in sunlight', ['REALISTIC', 'CINEMATIC'],
     () => S.stars > 0.5 ? 1 : 0, (i) => { S.stars = i ? 1 : 0.22; applySettings(); persist(); });
+  seg('HUD SIZE', 'scales every instrument panel together', ['SMALL', 'NORMAL', 'LARGE'],
+    () => S.hudScale < 0.92 ? 0 : S.hudScale > 1.08 ? 2 : 1,
+    (i) => { S.hudScale = [0.82, 1, 1.18][i]; applySettings(); persist(); });
   seg('CAMERA AUTO-CENTRE', 'chase view drifts back behind the rover', ['OFF', 'SLOW', 'FAST'],
     () => S.autoCentre, (i) => { S.autoCentre = i; App.rig.autoCentre = i; persist(); });
   seg('INVERT LOOK', '', ['OFF', 'ON'],
@@ -345,6 +349,8 @@ function applySettings() {
   App.rig.autoCentre = S.autoCentre;
   App.rig.fovScale = S.fov / 58;
   App.sky.starIntensity = S.stars;
+  // one knob for every instrument dimension; the stylesheet does the rest
+  document.documentElement.style.setProperty('--hud-k', S.hudScale);
   if (App.audio.ready) App.audio.setVolumes(S.volSfx, S.volMusic);
 }
 

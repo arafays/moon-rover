@@ -83,7 +83,11 @@ Every path in the project is relative, so it works from a subdirectory like
 | `H` | Toggle HUD |
 
 Mouse looks, wheel zooms. Gamepads work. On phones and tablets you get twin
-thumbsticks and a button column.
+thumbsticks and two button columns, including `HUD` to clear the instruments
+off the screen entirely.
+
+**HUD SIZE** under `Esc` scales every panel together if the default does not
+suit your screen or how far you hold it.
 
 The chase camera drifts back behind the rover only after you have left the mouse
 alone for about three seconds — set **CAMERA AUTO-CENTRE** to OFF under `Esc` if
@@ -172,6 +176,30 @@ smoothness between 100 % and 62 % before you notice, giving it back when there i
 headroom. Quality tier, shadow map size, MSAA and particle budgets are chosen
 from the device on first run and can be overridden under `Esc`.
 
+### The HUD on a small screen
+
+Every instrument dimension is a multiple of one CSS variable, so the whole
+panel set scales from a single knob and keeps its proportions instead of forty
+pixel values drifting apart. Type carries a floor the scale cannot push
+through: shrinking the HUD takes space off canvases, bars and padding, never
+off legibility.
+
+Scaling alone stops working somewhere around tablet size. A 390 px screen
+cannot carry mission control at any size you can still read — shrink far enough
+and you have six panels of 6 px type covering half the view. So phones drop
+instruments instead and the survivors get *bigger* than the tablet's: objective,
+heading, speed, power, map. Sample bay, thermal, status chips, wheel monitor,
+radar scope and the mission clock are reference readouts that nobody reads
+mid-corner, and they are all still in the pause panel.
+
+The other rule is that thumbs own the bottom of the screen. On any device that
+mounts the sticks the HUD moves above them — keyed on a class set by the code
+that actually creates the controls, not a `pointer: coarse` media query, since
+those two can disagree and the question that matters is whether there are
+thumbsticks on screen right now. A landscape phone is short rather than narrow,
+so there the HUD runs along the top edge instead of stacking down into the
+button columns.
+
 ---
 
 ## Audio
@@ -228,9 +256,9 @@ Progress autosaves to `localStorage` every 20 seconds.
 
 ## Development
 
-`node server.js 5173 --shots` adds a `POST /__shot` endpoint that writes a PNG
-into `.shots/` — used to capture frames while testing. Off by default; the
-release server accepts no writes of any kind.
+`node server.js 5173 --shots` adds a `POST /__shot?n=<name>&ext=<ext>` endpoint
+that writes an image into `.shots/` — used to capture frames while testing. Off
+by default; the release server accepts no writes of any kind.
 
 `window.REGOLITH` exposes the running app, plus `REGOLITH.tick(dt)` to advance a
 single frame by hand.

@@ -705,7 +705,7 @@ function stepWorld(dt, raw, input) {
     wheelSpin: spinMax, motorLoad: rover.motorLoad, speed,
     slip: clamp(slipSum / 6, 0, 1), rough: clamp(roughSum / 6, 0, 1),
     drilling: game.drill.active, contacts, alarm: game.dangerTone,
-    maxSpeed: DRIVE.maxSpeed
+    maxSpeed: DRIVE.maxSpeed, spinRef: rover.spinRef
   });
   audio.musicTick(App.elapsed, game.dangerTone);
 

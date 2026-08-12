@@ -31,7 +31,9 @@ const SCAN_COOL = 1.4;
    66 times. Even VIPER's much smaller 450 Wh is hours. There is no honest
    capacity that leaves power as a source of tension at this scale.
    So realistic mode does not pretend: it slows the drain by 8x, which takes a
-   full pack from 3.5 minutes of hard driving to about half an hour. Power stops
+   full pack from ~2.5 minutes of hard driving through shadow to ~19. (Not 8x
+   the wall clock: the survival-heater term only arms once heat falls past -30,
+   about 25 s in, and that crossover is not scaled.) Power stops
    being a panic and becomes planning — which is what it actually is on a real
    rover — and the pressure moves to time instead, where the slow drive, the
    slow drill and the 2.6 s delay already put it. */
@@ -373,9 +375,10 @@ export class Game {
     const sunUp = this.sky.sunDir.y;
     const lit = this.rover.sunVis * clamp(sunUp * 6, 0, 1);
     const panelFace = this.rover.panelDeploy * clamp(this.rover.up.dot(this.sky.sunDir) * 1.5 + 0.35, 0, 1);
-    // Percent of pack per second. A full charge is roughly three minutes of
-    // hard driving through shadow, or indefinite driving in the sun with the
-    // array out — which is the whole reason to care where the terminator is.
+    // Percent of pack per second. A full charge is about two and a half minutes
+    // of hard driving through shadow — the heaters below take a third of that —
+    // or indefinite driving in the sun with the array out, which is the whole
+    // reason to care where the terminator is.
     const charge = lit * panelFace * 1.35;
     let drain = 0.06;                                   // avionics floor
     drain += this.rover.motorLoad * 0.42;

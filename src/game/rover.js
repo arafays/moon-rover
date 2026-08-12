@@ -585,6 +585,9 @@ export class Rover {
   /** signed speed along the heading */
   get speed() { return this.vel.dot(this.forward); }
   get flipped() { return this.up.y < 0.18; }
+  /** Hub speed of a wheel rolling at top speed — the reference the motor
+      timbre is normalised against, so it follows the drive envelope. */
+  get spinRef() { return DRIVE.maxSpeed / WHEEL_R; }
 
   /* ============================================================
      physics

@@ -370,7 +370,11 @@ export class Audio {
   update(dt, st) {
     if (!this.ready) return;
     const t = this.now(), k = 0.06;
-    const spin = Math.min(Math.abs(st.wheelSpin) / 26, 1);
+    // Normalised against the hub speed of a wheel ROLLING at top speed, not a
+    // literal 26 rad/s: the LRV envelope clamps spin to 17 rad/s, so the fixed
+    // bar meant the motor topped out at two thirds of its timbre and never
+    // sounded worked at all.
+    const spin = Math.min(Math.abs(st.wheelSpin) / (st.spinRef || 26), 1);
     const load = Math.min(st.motorLoad, 1);
     const moving = st.contacts > 0 ? 1 : 0;
 

@@ -72,7 +72,11 @@ export class CameraRig {
       if (this.autoCentre > 0) {
         const delay = this.autoCentre === 1 ? 3.2 : 1.1;
         const ramp = clamp((this.lookIdle - delay) / 1.6, 0, 1);
-        const rate = (this.autoCentre === 1 ? 0.6 : 1.7) * ramp * sstep(0.5, 3.5, speed);
+        // Fractions of the drive envelope, not absolute m/s: at the LRV's
+        // 3.6 m/s top speed a literal 3.5 m/s bar meant auto-centre only
+        // reached full rate at 97 % of flat out, i.e. never.
+        const rate = (this.autoCentre === 1 ? 0.6 : 1.7) * ramp *
+          sstep(DRIVE.maxSpeed * 0.06, DRIVE.maxSpeed * 0.42, speed);
         if (rate > 0) {
           this.yaw += d * Math.min(1, dt * rate);
           this.pitch += (0.24 - this.pitch) * Math.min(1, dt * rate * 0.7);

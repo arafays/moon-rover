@@ -181,7 +181,9 @@ lengths earlier than feels right, or you hit the boulder you already stopped for
 Arm aiming and the camera are deliberately not delayed; that is a playability
 call, not a claim about physics, and the reasoning is in `main.js`.
 
-![The systems panel, with render quality, HUD size, camera and audio settings across five columns](docs/systems.jpg)
+![The systems panel, with DRIVE ENVELOPE set to LRV and SIGNAL DELAY set to EARTH 2.6 s](docs/systems.jpg)
+
+*Both realism settings switched on: the LRV drive profile and the Earth round trip.*
 
 ---
 

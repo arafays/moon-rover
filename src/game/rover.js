@@ -42,7 +42,15 @@ const BRAKE_TORQUE = 300;
    literals tuned to 8.4, so halving the top speed silently stopped the steering
    from loading up, the camera from dollying and the motor from ever sounding
    worked. Nothing errored; the rover just felt dead. */
-export const DRIVE = { maxSpeed: 8.4 };     // m/s ≈ 30 km/h — recklessly fast for a rover
+export const DRIVE = {
+  maxSpeed: 8.4,      // m/s ≈ 30 km/h — recklessly fast for a rover
+  commsDelay: 0,      // s, round trip. 0 = local control, 2.56 = driven from Earth
+};
+
+/* Earth–Moon round trip at the mean distance: 2 × 384 400 km / c = 2.564 s.
+   It swings 2.42–2.71 s over a month; the mean is close enough that modelling
+   the libration would be precision nobody can feel. */
+export const EARTH_RTT = 2.564;
 const WHEEL_I = 1.2;                        // kg·m² per wheel
 const MU_BASE = 0.88;                       // grousers bite; still well under asphalt
 const K_SLIP = 5200, K_LAT = 6400;          // tyre stiffnesses, N per m/s of slip

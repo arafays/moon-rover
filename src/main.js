@@ -13,7 +13,7 @@ import { Sky } from './world/sky.js';
 import { Props, HOME } from './world/props.js';
 import { Dust } from './world/dust.js';
 import { makeEarthTextures, makeMoonAlbedo } from './world/textures.js';
-import { Rover, DRIVE } from './game/rover.js';
+import { Rover, DRIVE, EARTH_RTT } from './game/rover.js';
 import { CameraRig, CAM } from './game/camera.js';
 import { Game, STATION, MASSIF } from './game/gameplay.js';
 import { HUD } from './ui/hud.js';
@@ -28,7 +28,7 @@ const App = {
     quality: guessQuality(), fov: 58, sens: 1.0, invertY: false,
     bloom: true, grain: 1.0, aberr: 1.0, stars: 1.0,
     volSfx: 0.8, volMusic: 0.5, music: true, tc: true, hudOn: true, autoCentre: 1,
-    hudScale: 1, realistic: false
+    hudScale: 1, realistic: false, comms: false
   }, Save.settings()),
   elapsed: 0, sunAz: 4.35, paused: false
 };
@@ -309,6 +309,11 @@ function buildSettingsUI() {
     () => S.realistic ? 1 : 0,
     (i) => { S.realistic = !!i; applySettings(); persist();
       App.hud.log(i ? 'DRIVE ENVELOPE — LRV PROFILE, 3.6 m/s' : 'DRIVE ENVELOPE — ARCADE, 8.4 m/s'); });
+  seg('SIGNAL DELAY', 'drive commands cross to the Moon and back before the rover acts',
+    ['OFF', 'EARTH 2.6 s'],
+    () => S.comms ? 1 : 0,
+    (i) => { S.comms = !!i; applySettings(); persist();
+      App.hud.log(i ? 'UPLINK — 1.28 s EACH WAY, ROUND TRIP 2.56 s' : 'UPLINK — LOCAL CONTROL'); });
   seg('HUD SIZE', 'scales every instrument panel together', ['SMALL', 'NORMAL', 'LARGE'],
     () => S.hudScale < 0.92 ? 0 : S.hudScale > 1.08 ? 2 : 1,
     (i) => { S.hudScale = [0.82, 1, 1.18][i]; applySettings(); persist(); });
@@ -387,6 +392,7 @@ function applySettings() {
   // threshold in the rover, camera and audio is a fraction of this, so the one
   // assignment retunes all of them.
   DRIVE.maxSpeed = S.realistic ? 3.6 : 8.4;
+  DRIVE.commsDelay = S.comms ? EARTH_RTT : 0;
   // one knob for every instrument dimension; the stylesheet does the rest
   document.documentElement.style.setProperty('--hud-k', S.hudScale);
   if (App.audio.ready) App.audio.setVolumes(S.volSfx, S.volMusic);
@@ -504,6 +510,28 @@ function idleWorld(dt) {
   App.engine.aimShadow(_v.set(cx, cy - 40, cz), App.sky.sunDir);
 }
 
+/* Commands in flight to the rover.
+
+   Only the DRIVE axes go through here, not arm aiming and not the camera. That
+   is a design call, not a modelling shortcut, and it is worth being explicit
+   about: latency is interesting where it forces anticipation — you brake before
+   you think you need to, and a boulder you can already see is one you may
+   already have hit. Aiming a drill is point-and-hold; the same 2.6 s there is
+   friction with no decision in it. The chase camera is not a real camera on a
+   real rover at all, so delaying it would buy nothing. */
+const cmdQueue = [];
+
+function pumpCommands(now, live) {
+  const d = DRIVE.commsDelay;
+  if (d <= 0) { cmdQueue.length = 0; return live; }
+  cmdQueue.push({ t: now, ...live });
+  // Everything stamped before now-d has arrived; the last of those is what the
+  // rover is acting on. Nothing yet => the first commands are still crossing.
+  let arrived = null;
+  while (cmdQueue.length && cmdQueue[0].t <= now - d) arrived = cmdQueue.shift();
+  return arrived || { throttle: 0, steer: 0, brake: 0 };
+}
+
 /* ---------------- driving ---------------- */
 function stepWorld(dt, raw, input) {
   const { rover, terrain, sky, props, dust, game, rig, engine, audio, hud } = App;
@@ -517,13 +545,14 @@ function stepWorld(dt, raw, input) {
 
   /* ---- controls ---- */
   const photo = rig.mode === CAM.PHOTO;
-  const ctl = {
+  const sent = pumpCommands(App.elapsed, {
     throttle: photo ? 0 : raw.throttle,
     steer: photo ? 0 : raw.steer,
     brake: photo ? 1 : raw.brake,
-    tc: game.tc
-  };
-  if (photo) { ctl.throttle = 0; ctl.steer = 0; }
+  });
+  const ctl = { throttle: sent.throttle, steer: sent.steer, brake: sent.brake, tc: game.tc };
+  if (photo) { ctl.throttle = 0; ctl.steer = 0; ctl.brake = 1; }
+  App.cmdInFlight = cmdQueue.length;
 
   if (input.hit('KeyF')) { rover.headlights = !rover.headlights; audio.ui('tick'); hud.log(rover.headlights ? 'LAMPS ON' : 'LAMPS OFF'); }
   if (input.hit('KeyG')) game.doScan();

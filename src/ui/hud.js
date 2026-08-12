@@ -4,6 +4,7 @@
 import { CODEX, MISSIONS } from '../game/lore.js';
 import { HOME } from '../world/props.js';
 import { STATION, MASSIF } from '../game/gameplay.js';
+import { DRIVE } from '../game/rover.js';
 import { PLAYABLE_R, MACRO_RES, MACRO_EXT } from '../world/terrain.js';
 import { clamp, sstep } from '../core/rng.js';
 
@@ -473,6 +474,7 @@ export class HUD {
 
     // system chips
     const chips = [
+      [`UPLINK ${DRIVE.commsDelay > 0 ? DRIVE.commsDelay.toFixed(1) + 's' : 'LOCAL'}`, DRIVE.commsDelay > 0],
       ['ARM', rover.armOut],
       ['ARRAY', rover.panelDeploy > 0.6],
       ['LAMPS', rover.lampPower > 0.1],

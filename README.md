@@ -153,6 +153,21 @@ alone for about three seconds — set **CAMERA AUTO-CENTRE** to OFF under `Esc` 
 you would rather it never moved on its own. **HUD SIZE** scales every instrument
 panel together.
 
+Two settings make it harder and more honest:
+
+**DRIVE ENVELOPE** swaps the arcade 30 km/h for 13 km/h, the Apollo LRV's real
+cruise. Every speed threshold in the rover, camera and audio is a fraction of
+that one number, so the steering still loads up, the camera still dollies and
+the motor still sounds worked — they just do it at a real rover's pace.
+
+**SIGNAL DELAY** puts you where a Lunokhod driver actually sat. Drive commands
+cross to the Moon and the picture comes back: 1.28 s each way, 2.56 s before you
+see the rover do what you told it. Measured in-game, at LRV speed, releasing the
+throttle costs you **21 m of coast instead of 11** — you brake three rover
+lengths earlier than feels right, or you hit the boulder you already stopped for.
+Arm aiming and the camera are deliberately not delayed; that is a playability
+call, not a claim about physics, and the reasoning is in `main.js`.
+
 ![The systems panel, with render quality, HUD size, camera and audio settings across five columns](docs/systems.jpg)
 
 ---

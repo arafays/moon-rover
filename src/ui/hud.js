@@ -473,6 +473,7 @@ export class HUD {
 
     // system chips
     const chips = [
+      ['ARM', rover.armOut],
       ['ARRAY', rover.panelDeploy > 0.6],
       ['LAMPS', rover.lampPower > 0.1],
       ['GPR', game.scan.active],

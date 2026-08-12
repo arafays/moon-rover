@@ -8,6 +8,7 @@ import { makeRNG, clamp, sstep, lerp } from '../core/rng.js';
 import { PLAYABLE_R } from '../world/terrain.js';
 import { HOME } from '../world/props.js';
 import { CODEX, SAMPLES, MISSIONS } from './lore.js';
+import { POWER_FLOOR, POWER_KNEE } from './rover.js';
 
 export const STATION = { x: -236, z: 140 };
 export const MASSIF = { x: 0, z: 0 };
@@ -364,6 +365,13 @@ export class Game {
     drain += this.rover.lampPower * 0.14;
     if (this.heat < -30) drain += 0.22;                 // survival heaters
     this.power = clamp(this.power + (charge - drain) * dt, 0, 100);
+    // A flat pack now costs you the drive, not just the instruments.
+    this.rover.powerScale = POWER_FLOOR + (1 - POWER_FLOOR) * clamp(this.power / POWER_KNEE, 0, 1);
+    if (this.rover.powerScale < 0.99 && !this._brownWarned) {
+      this._brownWarned = true;
+      this.log('PACK LOW — HUB TORQUE REDUCED', 'warn'); this.audio.ui('warn');
+    }
+    if (this.power > POWER_KNEE + 4) this._brownWarned = false;
     if (this.atHome) this.power = clamp(this.power + 6 * dt, 0, 100);
 
     const targetHeat = lerp(-58, 28, lit) + this.rover.motorLoad * 14 + (this.drill.active ? 10 : 0);

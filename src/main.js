@@ -51,9 +51,14 @@ function progress(p, msg) {
   if (msg) loadtext.textContent = msg;
 }
 
-/* Optional imagery. The game generates everything it needs, so the repo can
-   ship with no third-party assets; if real equirectangular maps are dropped
-   into assets/tex/ they are used instead. A missing file is not an error. */
+/* Optional imagery. The game generates everything it needs, so the repo ships
+   with no third-party assets.
+
+   Off by default, and deliberately not auto-probing: attempting the four loads
+   unconditionally cost every player four 404s in the console on every single
+   load, to support a folder that is empty in every copy of this repo. Drop real
+   equirectangular maps into assets/tex/ and flip this to true. */
+const USE_DISK_TEX = false;
 const OPTIONAL_TEX = [
   ['earthDay', 'assets/tex/earth-2k.jpg', true],
   ['earthNight', 'assets/tex/earth-night-2k.jpg', true],
@@ -62,6 +67,7 @@ const OPTIONAL_TEX = [
 ];
 
 function loadTextures() {
+  if (!USE_DISK_TEX) return Promise.resolve({});
   const L = new THREE.TextureLoader();
   const one = ([key, url, srgb]) => new Promise((resolve) => {
     L.load(url,
@@ -501,7 +507,9 @@ function stepWorld(dt, raw, input) {
     rover.armYaw = clamp(rover.armYaw - raw.steer * spd, -0.95, 0.95);
     rover.armReach = clamp(rover.armReach + raw.throttle * spd * 0.8, 0.55, 1.62);
     ctl.throttle = 0; ctl.steer = 0; ctl.brake = 1;      // chassis is parked while aiming
-    if (input.mouse.down && !game.drill.active) game.startDrill();
+    // `clicked` as well as `down`: a phone tap can begin and end between two
+    // frames, and checking only `down` silently drops it.
+    if ((input.mouse.down || input.mouse.clicked) && !game.drill.active) game.startDrill();
   }
   if (input.hit('KeyB')) game.deployRelay();
   if (input.hit('KeyT')) game.togglePanel();

@@ -22,6 +22,19 @@ const SUSP_REST = 0.46, SUSP_TRAVEL = 0.36;
 // Earth-car spring rates here would make the suspension act like a steel bar.
 const SUSP_K = 2700, SUSP_C = 1250;
 const MOTOR_TORQUE = 118;                   // N·m at the hub — just past the traction limit
+/* Hub authority as a function of pack charge: full torque above 25 %, then a
+   linear fade to 0.18 at empty.
+
+   The knee has to sit well above the point where you would *think* it should.
+   MOTOR_TORQUE is deliberately just past the traction limit — 6 x 118/0.335 =
+   2113 N of hub force against a ~1250 N friction ceiling — so scaling torque
+   changes nothing on the flat until it drops below ~0.59. Anything gentler than
+   this and a flat pack is invisible on level ground; the effect shows up on
+   grades first, which is the right order.
+
+   The floor exists so a dead pack never strands you: 0.18 still crawls, which
+   is enough to reach sunlight and let the array recover. */
+export const POWER_FLOOR = 0.18, POWER_KNEE = 25;
 const BRAKE_TORQUE = 300;
 const MAX_SPEED = 8.4;                      // m/s ≈ 30 km/h — recklessly fast for a rover
 const WHEEL_I = 1.2;                        // kg·m² per wheel
@@ -228,6 +241,7 @@ export class Rover {
     /* ---- control state ---- */
     this.throttle = 0; this.brake = 0; this.steerInput = 0;
     this.headlights = false; this.lampPower = 0;
+    this.powerScale = 1;                     // set from gameplay each frame
     this.mastYaw = 0; this.mastPitch = 0;
     this.armDeploy = 0; this.drillSpin = 0; this.drilling = false;
     // operator-aimed arm: swing about the shoulder, reach along it, and the drop
@@ -658,7 +672,7 @@ export class Rover {
       /* ---- drive / brake torque ---- */
       const mu = MU_BASE * (1 - 0.30 * sstep(0.0, 0.09, w.sink));
       const maxF = mu * fs;
-      let throttleT = ctl.throttle * MOTOR_TORQUE *
+      let throttleT = ctl.throttle * MOTOR_TORQUE * this.powerScale *
         (1 - sstep(MAX_SPEED * 0.82, MAX_SPEED, Math.abs(vLong)));
       /* ---- point turn ----
          Six independently driven hubs can spin one side against the other and
@@ -667,7 +681,7 @@ export class Rover {
          sounds. Authority fades out as soon as you are actually rolling. */
       const pivot = Math.abs(ctl.steer) * (1 - sstep(0.4, 1.8, speedAbs)) *
                     (1 - Math.min(1, Math.abs(ctl.throttle) * 1.6));
-      if (pivot > 0.01) throttleT += w.side * Math.sign(ctl.steer) * MOTOR_TORQUE * 0.78 * pivot;
+      if (pivot > 0.01) throttleT += w.side * Math.sign(ctl.steer) * MOTOR_TORQUE * this.powerScale * 0.78 * pivot;
       // traction control: back off the hub before it digs itself in
       if (ctl.tc) {
         const excess = Math.abs(w.spinVel * WHEEL_R - vLong) - 0.9;

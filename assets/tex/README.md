@@ -8,8 +8,9 @@ degrees seen from the Moon — roughly forty pixels on a 1080p screen — and th
 lunar albedo map is only ever sampled at a 2.4 km repeat as low-frequency
 mottling, so neither needs a photograph. See `src/world/textures.js`.
 
-If you would rather use real imagery, drop equirectangular files here and they
-are picked up automatically; a missing file is not an error.
+If you would rather use real imagery, drop equirectangular files here and set
+`USE_DISK_TEX = true` in `src/main.js`. It is off by default so that an empty
+folder does not cost every player four 404s on load.
 
 | filename | used for |
 |---|---|

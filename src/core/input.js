@@ -6,7 +6,10 @@ export class Input {
     this.canvas = canvas;
     this.keys = new Set();
     this.pressed = new Set();      // edge-triggered, cleared each frame
-    this.mouse = { dx: 0, dy: 0, wheel: 0, locked: false, down: false, rdown: false };
+    // `clicked` latches a press until a frame consumes it. `down` alone drops a
+    // quick tap whose touchstart and touchend both land between two frames —
+    // which is most taps on a phone, and is why the drill was unusable there.
+    this.mouse = { dx: 0, dy: 0, wheel: 0, locked: false, down: false, clicked: false, rdown: false };
     this.touch = { lx: 0, ly: 0, rx: 0, ry: 0, active: false, btn: {} };
     this.pad = null;
     this.enabled = true;
@@ -21,7 +24,7 @@ export class Input {
     addEventListener('blur', () => { this.keys.clear(); });
 
     canvas.addEventListener('mousedown', (e) => {
-      if (e.button === 0) this.mouse.down = true;
+      if (e.button === 0) { this.mouse.down = true; this.mouse.clicked = true; }
       if (e.button === 2) this.mouse.rdown = true;
       if (this.enabled && !this.mouse.locked && !this.touch.active) canvas.requestPointerLock?.();
     });
@@ -116,7 +119,7 @@ export class Input {
       const k = b.dataset.k, lmb = b.dataset.lmb, hold = b.dataset.hold;
       const down = (e) => {
         e.preventDefault(); b.classList.add('on');
-        if (lmb) this.mouse.down = true;
+        if (lmb) { this.mouse.down = true; this.mouse.clicked = true; }
         else { this.keys.add(k); this.pressed.add(k); }
       };
       const up = () => {
@@ -199,5 +202,5 @@ export class Input {
     return out;
   }
 
-  endFrame() { this.pressed.clear(); }
+  endFrame() { this.pressed.clear(); this.mouse.clicked = false; }
 }

@@ -5,14 +5,16 @@
 ### The Silence at Anaxagoras
 
 **A lunar rover survey game that runs in a browser tab.**
-No engine, no build step, no dependencies, no downloaded assets.
+No engine, no build step, no `npm install`, no asset files.
+One vendored library: three.js.
 
 [![Play](https://img.shields.io/badge/▶_Play_it-in_your_browser-6fe3f5?style=for-the-badge)](https://winchxyz.github.io/moon-rover/)
 [![Demo](https://img.shields.io/badge/▶_28s_demo-with_sound-8b8578?style=for-the-badge)](https://github.com/winchxyz/moon-rover/releases/download/v1.0/regolith-demo.mp4)
 
 ![WebGL2](https://img.shields.io/badge/WebGL2-no_build_step-1a1d24)
 ![three.js](https://img.shields.io/badge/three.js-r160_(vendored)-1a1d24)
-![Dependencies](https://img.shields.io/badge/dependencies-0-1a1d24)
+![Dependencies](https://img.shields.io/badge/npm_deps-0-1a1d24)
+![Runtime](https://img.shields.io/badge/runtime_lib-three.js_only-1a1d24)
 ![Assets](https://img.shields.io/badge/third--party_assets-0-1a1d24)
 ![Size](https://img.shields.io/badge/download-~380_KB_gzipped-1a1d24)
 ![Licence](https://img.shields.io/badge/licence-MIT-1a1d24)
@@ -79,7 +81,7 @@ there with the throttle down — though it can still climb out of one.
 |--:|:--|
 | **6,325** | lines of JavaScript in `src/` |
 | **592** | lines of CSS |
-| **0** | dependencies, build steps, and asset files the game loads |
+| **0** | npm dependencies, build steps, and asset files the game loads |
 | **5** | missions · **12** codex entries · **9** sample types |
 | **~380 KB** | gzipped download (1.68 MB raw), including a vendored three.js |
 

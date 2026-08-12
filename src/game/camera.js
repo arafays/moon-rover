@@ -3,6 +3,7 @@
    ============================================================ */
 import * as THREE from 'three';
 import { clamp, lerp, sstep } from '../core/rng.js';
+import { DRIVE } from './rover.js';
 
 export const CAM = { CHASE: 0, ORBIT: 1, MAST: 2, PHOTO: 3 };
 const NAMES = ['CHASE', 'ORBIT', 'MAST CAM', 'PHOTO'];
@@ -78,13 +79,13 @@ export class CameraRig {
         }
       }
 
-      const dist = this.dist * (1 + sstep(2, 8.4, speed) * 0.18);
+      const dist = this.dist * (1 + sstep(DRIVE.maxSpeed * 0.24, DRIVE.maxSpeed, speed) * 0.18);
       const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
       _o.set(Math.sin(this.yaw) * cp, sp, Math.cos(this.yaw) * cp).multiplyScalar(dist);
       this.pos.copy(rp).add(_o); this.pos.y += 1.5;
       this.look.copy(rp).addScaledVector(rover.forward, 2.6 + speed * 0.30);
       this.look.y += 1.0;
-      this.fovTarget = 58 + sstep(3, 8.4, speed) * 9;
+      this.fovTarget = 58 + sstep(DRIVE.maxSpeed * 0.36, DRIVE.maxSpeed, speed) * 9;
     }
     else if (this.mode === CAM.ORBIT) {
       const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);

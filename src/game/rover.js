@@ -36,7 +36,13 @@ const MOTOR_TORQUE = 118;                   // N·m at the hub — just past the
    is enough to reach sunlight and let the array recover. */
 export const POWER_FLOOR = 0.18, POWER_KNEE = 25;
 const BRAKE_TORQUE = 300;
-const MAX_SPEED = 8.4;                      // m/s ≈ 30 km/h — recklessly fast for a rover
+/* The drive envelope. Mutable, because REALISTIC MODE swaps maxSpeed for a real
+   rover's — and because every speed threshold below is written as a FRACTION of
+   it rather than an absolute m/s. That matters: those thresholds used to be
+   literals tuned to 8.4, so halving the top speed silently stopped the steering
+   from loading up, the camera from dollying and the motor from ever sounding
+   worked. Nothing errored; the rover just felt dead. */
+export const DRIVE = { maxSpeed: 8.4 };     // m/s ≈ 30 km/h — recklessly fast for a rover
 const WHEEL_I = 1.2;                        // kg·m² per wheel
 const MU_BASE = 0.88;                       // grousers bite; still well under asphalt
 const K_SLIP = 5200, K_LAT = 6400;          // tyre stiffnesses, N per m/s of slip
@@ -589,7 +595,7 @@ export class Rover {
 
     /* ---- steering: front pair leads, rear pair counter-steers ---- */
     const speedAbs = Math.abs(this.vel.dot(fwd));
-    const steerLimit = lerp(0.72, 0.30, sstep(1.5, 8.0, speedAbs));
+    const steerLimit = lerp(0.72, 0.30, sstep(DRIVE.maxSpeed * 0.18, DRIVE.maxSpeed * 0.95, speedAbs));
     for (const w of this.wheels) {
       // Negative: a positive steer input must swing the wheels toward −X, which
       // is the chassis's right-hand side.
@@ -673,18 +679,18 @@ export class Rover {
       const mu = MU_BASE * (1 - 0.30 * sstep(0.0, 0.09, w.sink));
       const maxF = mu * fs;
       let throttleT = ctl.throttle * MOTOR_TORQUE * this.powerScale *
-        (1 - sstep(MAX_SPEED * 0.82, MAX_SPEED, Math.abs(vLong)));
+        (1 - sstep(DRIVE.maxSpeed * 0.82, DRIVE.maxSpeed, Math.abs(vLong)));
       /* ---- point turn ----
          Six independently driven hubs can spin one side against the other and
          pivot on the spot. Without it, a rover that stops facing the wrong way
          has to drive off and come back, which is exactly as tedious as it
          sounds. Authority fades out as soon as you are actually rolling. */
-      const pivot = Math.abs(ctl.steer) * (1 - sstep(0.4, 1.8, speedAbs)) *
+      const pivot = Math.abs(ctl.steer) * (1 - sstep(DRIVE.maxSpeed * 0.048, DRIVE.maxSpeed * 0.214, speedAbs)) *
                     (1 - Math.min(1, Math.abs(ctl.throttle) * 1.6));
       if (pivot > 0.01) throttleT += w.side * Math.sign(ctl.steer) * MOTOR_TORQUE * this.powerScale * 0.78 * pivot;
       // traction control: back off the hub before it digs itself in
       if (ctl.tc) {
-        const excess = Math.abs(w.spinVel * WHEEL_R - vLong) - 0.9;
+        const excess = Math.abs(w.spinVel * WHEEL_R - vLong) - DRIVE.maxSpeed * 0.107;
         if (excess > 0) throttleT *= Math.max(0.15, 1 - excess * 0.85);
       }
       /* ---- hill hold ----
@@ -694,7 +700,7 @@ export class Rover {
          at — which is the whole reason this exists. Fades out with speed so
          there is still some coast in it. */
       const holding = Math.abs(ctl.throttle) < 0.05 && pivot < 0.01;
-      const brakeCmd = Math.max(ctl.brake, holding ? 0.6 * (1 - sstep(0.5, 3.0, speedAbs)) : 0);
+      const brakeCmd = Math.max(ctl.brake, holding ? 0.6 * (1 - sstep(DRIVE.maxSpeed * 0.06, DRIVE.maxSpeed * 0.357, speedAbs)) : 0);
       const brakeT = brakeCmd * BRAKE_TORQUE * Math.sign(w.spinVel || 1e-6);
 
       /* ---- tyre longitudinal force, solved SEMI-IMPLICITLY ----
@@ -717,7 +723,7 @@ export class Rover {
         slipV = spinNew * WHEEL_R - vLong;
       }
       if (brakeCmd > 0.5 && Math.abs(spinNew) < 0.7) spinNew *= 0.5;
-      w.spinVel = clamp(spinNew, -MAX_SPEED / WHEEL_R * 1.6, MAX_SPEED / WHEEL_R * 1.6);
+      w.spinVel = clamp(spinNew, -DRIVE.maxSpeed / WHEEL_R * 1.6, DRIVE.maxSpeed / WHEEL_R * 1.6);
       w.spin += w.spinVel * dt;
 
       // rolling resistance always opposes motion

@@ -13,7 +13,7 @@ import { Sky } from './world/sky.js';
 import { Props, HOME } from './world/props.js';
 import { Dust } from './world/dust.js';
 import { makeEarthTextures, makeMoonAlbedo } from './world/textures.js';
-import { Rover } from './game/rover.js';
+import { Rover, DRIVE } from './game/rover.js';
 import { CameraRig, CAM } from './game/camera.js';
 import { Game, STATION, MASSIF } from './game/gameplay.js';
 import { HUD } from './ui/hud.js';
@@ -28,7 +28,7 @@ const App = {
     quality: guessQuality(), fov: 58, sens: 1.0, invertY: false,
     bloom: true, grain: 1.0, aberr: 1.0, stars: 1.0,
     volSfx: 0.8, volMusic: 0.5, music: true, tc: true, hudOn: true, autoCentre: 1,
-    hudScale: 1
+    hudScale: 1, realistic: false
   }, Save.settings()),
   elapsed: 0, sunAz: 4.35, paused: false
 };
@@ -304,6 +304,11 @@ function buildSettingsUI() {
     () => S.aberr ? 1 : 0, (i) => { S.aberr = i ? 1 : 0; applySettings(); persist(); });
   seg('STARFIELD', 'cinematic keeps stars visible in sunlight', ['REALISTIC', 'CINEMATIC'],
     () => S.stars > 0.5 ? 1 : 0, (i) => { S.stars = i ? 1 : 0.22; applySettings(); persist(); });
+  seg('DRIVE ENVELOPE', 'ARCADE 30 km/h · LRV 13 km/h, the real Apollo rover cruise',
+    ['ARCADE', 'LRV'],
+    () => S.realistic ? 1 : 0,
+    (i) => { S.realistic = !!i; applySettings(); persist();
+      App.hud.log(i ? 'DRIVE ENVELOPE — LRV PROFILE, 3.6 m/s' : 'DRIVE ENVELOPE — ARCADE, 8.4 m/s'); });
   seg('HUD SIZE', 'scales every instrument panel together', ['SMALL', 'NORMAL', 'LARGE'],
     () => S.hudScale < 0.92 ? 0 : S.hudScale > 1.08 ? 2 : 1,
     (i) => { S.hudScale = [0.82, 1, 1.18][i]; applySettings(); persist(); });
@@ -378,6 +383,10 @@ function applySettings() {
   App.rig.autoCentre = S.autoCentre;
   App.rig.fovScale = S.fov / 58;
   App.sky.starIntensity = S.stars;
+  // Apollo's LRV cruised at ~13 km/h; the arcade default is 30. Every speed
+  // threshold in the rover, camera and audio is a fraction of this, so the one
+  // assignment retunes all of them.
+  DRIVE.maxSpeed = S.realistic ? 3.6 : 8.4;
   // one knob for every instrument dimension; the stylesheet does the rest
   document.documentElement.style.setProperty('--hud-k', S.hudScale);
   if (App.audio.ready) App.audio.setVolumes(S.volSfx, S.volMusic);
@@ -664,7 +673,8 @@ function stepWorld(dt, raw, input) {
   audio.update(dt, {
     wheelSpin: spinMax, motorLoad: rover.motorLoad, speed,
     slip: clamp(slipSum / 6, 0, 1), rough: clamp(roughSum / 6, 0, 1),
-    drilling: game.drill.active, contacts, alarm: game.dangerTone
+    drilling: game.drill.active, contacts, alarm: game.dangerTone,
+    maxSpeed: DRIVE.maxSpeed
   });
   audio.musicTick(App.elapsed, game.dangerTone);
 

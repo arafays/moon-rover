@@ -389,8 +389,11 @@ export class Audio {
     for (const o of this.wOsc) o.frequency.setTargetAtTime(340 + spin * 1180, t, 0.07);
     this.wGain.gain.setTargetAtTime((0.0016 + spin * 0.0075 + load * 0.005) * moving, t, k);
 
-    const spd = Math.min(st.speed / 8, 1);
-    this.gFilt.frequency.setTargetAtTime(180 + st.speed * 55, t, 0.12);
+    // normalised against the drive envelope, not a literal: a realistic-mode
+    // rover tops out at 3.6 m/s and would otherwise never sound loaded
+    const vmax = st.maxSpeed || 8.4;
+    const spd = Math.min(st.speed / (vmax * 0.95), 1);
+    this.gFilt.frequency.setTargetAtTime(180 + spd * 440, t, 0.12);
     this.gGain.gain.setTargetAtTime((spd * 0.045 + st.slip * 0.085) * moving, t, k);
 
     // scatter individual grains on top of the bed

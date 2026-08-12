@@ -351,6 +351,23 @@ function buildSettingsUI() {
 }
 function persist() { Save.saveSettings(App.settings); }
 
+/* Save the frame that was just drawn. Photo mode hides the HUD already, so what
+   lands on disk is what you framed. */
+function saveFrame() {
+  try {
+    const url = App.engine.renderer.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    const t = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.download = `regolith-${t}.png`;
+    a.href = url;
+    a.click();
+    App.hud.log('FRAME SAVED', 'good');
+    App.audio.ui('ok');
+  } catch (e) {
+    App.hud.log('FRAME CAPTURE FAILED', 'bad');
+  }
+}
+
 function applySettings() {
   const S = App.settings, e = App.engine;
   e.final.uniforms.uGrain.value = S.grain;
@@ -388,6 +405,7 @@ function buildHelpUI() {
       ${row('Look', 'MOUSE')}${row('Zoom', 'WHEEL')}
       ${row('In photo mode: fly', 'W', 'A', 'S', 'D')}
       ${row('In photo mode: up / down', 'Q', 'Z')}${row('In photo mode: boost', 'SHIFT')}
+      ${row('Save the frame as a PNG', 'K')}
     </div>
     <div class="keygroup"><h4>NOTES FROM THE OPERATIONS MANUAL</h4>
       <div class="keyrow"><span>One sixth of a gravity is one sixth of the grip. Brake early.</span></div>
@@ -448,6 +466,10 @@ function tick(dt) {
   App.engine.final.uniforms.uSunUV.value.set(sp.x * 0.5 + 0.5, sp.y * 0.5 + 0.5, vis * 0.9);
 
   App.engine.render(dt);
+  // Must run in the same task as the draw: the drawing buffer is cleared before
+  // the next event loop turn unless preserveDrawingBuffer is on, which costs
+  // performance on every frame to serve a key almost nobody presses.
+  if (App.wantShot) { App.wantShot = false; saveFrame(); }
   input.endFrame();
 
   fpsT += dt; fpsN++;
@@ -514,6 +536,7 @@ function stepWorld(dt, raw, input) {
   if (input.hit('KeyB')) game.deployRelay();
   if (input.hit('KeyT')) game.togglePanel();
   if (input.hit('KeyC')) { rig.cycle(rover); if (rig.mode === CAM.PHOTO) rig.enterPhoto(rover); audio.ui('tick'); }
+  if (input.hit('KeyK')) App.wantShot = true;
   if (input.hit('KeyP')) {
     rig.setMode(rig.mode === CAM.PHOTO ? CAM.CHASE : CAM.PHOTO, rover);
     if (rig.mode === CAM.PHOTO) rig.enterPhoto(rover);

@@ -18,11 +18,15 @@ export class Audio {
     this._motorOn = false;
   }
 
-  init() {
+  /* `external` lets the whole graph be built on an OfflineAudioContext, which
+     is how the demo video's soundtrack is rendered: an offline context's
+     currentTime does not advance as you schedule against it, so callers set
+     `timeBase` per frame and every scheduling site reads now() instead. */
+  init(external) {
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    const ctx = this.ctx = new AC();
+    if (!external && !AC) return;
+    const ctx = this.ctx = external || new AC();
 
     this.master = ctx.createGain(); this.master.gain.value = 0.9;
     const comp = ctx.createDynamicsCompressor();
@@ -49,6 +53,9 @@ export class Audio {
   }
 
   resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }
+
+  /** Scheduling clock. Realtime uses the context; offline renders override it. */
+  now() { return this.timeBase != null ? this.timeBase : this.ctx.currentTime; }
 
   _noise(sec) {
     const n = Math.floor(this.ctx.sampleRate * sec);
@@ -201,7 +208,7 @@ export class Audio {
   ];
 
   _voice(freq, dur, gain = 0.10, type = 'sine', detune = 0) {
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq; o.detune.value = detune;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
@@ -230,7 +237,7 @@ export class Audio {
 
   setMusic(on) {
     this.musicOn = on;
-    if (this.ready) this.mBus.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.6);
+    if (this.ready) this.mBus.gain.setTargetAtTime(on ? 1 : 0, this.now(), 0.6);
   }
 
   /* ---------------- granular regolith ----------------
@@ -238,7 +245,7 @@ export class Audio {
      continuous bed plus scattered grains at a rate set by wheel speed gets a
      lot closer than any amount of EQ on a static loop. */
   _grain(level, bright, pan) {
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const src = ctx.createBufferSource();
     src.buffer = this.noiseBuf;
     src.playbackRate.value = 0.55 + Math.random() * 1.3;
@@ -259,7 +266,7 @@ export class Audio {
   /** A suspension stop taking a hit — structure-borne, so it is a dull knock. */
   clunk(force, pan = 0) {
     if (!this.ready || force < 0.08) return;
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const amp = Math.min(force, 1) * 0.22;
     const o = ctx.createOscillator(); o.type = 'sine';
     o.frequency.setValueAtTime(150 + Math.random() * 60, t);
@@ -284,7 +291,7 @@ export class Audio {
 
   /* ---------------- one-shots ---------------- */
   _env(node, peak, attack, decay) {
-    const t = this.ctx.currentTime;
+    const t = this.now();
     node.gain.cancelScheduledValues(t);
     node.gain.setValueAtTime(0.0001, t);
     node.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + attack);
@@ -293,7 +300,7 @@ export class Audio {
 
   thud(force = 1) {
     if (!this.ready) return;
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const o = ctx.createOscillator(); o.type = 'sine';
     o.frequency.setValueAtTime(120 * (0.7 + force * 0.4), t);
     o.frequency.exponentialRampToValueAtTime(32, t + 0.28);
@@ -309,7 +316,7 @@ export class Audio {
 
   ping(freq = 880, dur = 0.5, peak = 0.16, type = 'sine') {
     if (!this.ready) return;
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
     const g = ctx.createGain(); this._env(g, peak, 0.006, dur);
     o.connect(g); g.connect(this.busSfx); g.connect(this.verb);
@@ -319,7 +326,7 @@ export class Audio {
   /** the GPR chirp: a real swept pulse, because that is what a GPR emits */
   chirp() {
     if (!this.ready) return;
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const o = ctx.createOscillator(); o.type = 'sine';
     o.frequency.setValueAtTime(1400, t);
     o.frequency.exponentialRampToValueAtTime(170, t + 0.42);
@@ -351,7 +358,7 @@ export class Audio {
 
   radio() {
     if (!this.ready) return;
-    const ctx = this.ctx, t = ctx.currentTime;
+    const ctx = this.ctx, t = this.now();
     const n = ctx.createBufferSource(); n.buffer = this.noiseBuf;
     const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 1.4;
     const g = ctx.createGain(); this._env(g, 0.075, 0.02, 0.6);
@@ -362,7 +369,7 @@ export class Audio {
   /* ---------------- per-frame mix ---------------- */
   update(dt, st) {
     if (!this.ready) return;
-    const t = this.ctx.currentTime, k = 0.06;
+    const t = this.now(), k = 0.06;
     const spin = Math.min(Math.abs(st.wheelSpin) / 26, 1);
     const load = Math.min(st.motorLoad, 1);
     const moving = st.contacts > 0 ? 1 : 0;
@@ -407,7 +414,7 @@ export class Audio {
   setVolumes(sfx, music) {
     this.volSfx = sfx; this.volMusic = music;
     if (!this.ready) return;
-    this.busSfx.gain.setTargetAtTime(sfx, this.ctx.currentTime, 0.1);
-    this.busMusic.gain.setTargetAtTime(music, this.ctx.currentTime, 0.1);
+    this.busSfx.gain.setTargetAtTime(sfx, this.now(), 0.1);
+    this.busMusic.gain.setTargetAtTime(music, this.now(), 0.1);
   }
 }

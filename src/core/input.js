@@ -79,6 +79,7 @@ export class Input {
         <button class="tb" data-k="KeyF">LAMP</button>
         <button class="tb" data-k="KeyT">ARRAY</button>
         <button class="tb" data-k="KeyH">HUD</button>
+        <button class="tb" data-k="KeyK">SHOT</button>
         <button class="tb wide" data-k="Space" data-hold="1">BRAKE</button>
       </div>`;
     document.body.appendChild(wrap);

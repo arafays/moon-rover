@@ -8,6 +8,7 @@
 No engine, no build step, no dependencies, no downloaded assets.
 
 [![Play](https://img.shields.io/badge/▶_Play_it-in_your_browser-6fe3f5?style=for-the-badge)](https://winchxyz.github.io/moon-rover/)
+[![Demo](https://img.shields.io/badge/▶_28s_demo-with_sound-8b8578?style=for-the-badge)](https://github.com/winchxyz/moon-rover/releases/download/v1.0/regolith-demo.mp4)
 
 ![WebGL2](https://img.shields.io/badge/WebGL2-no_build_step-1a1d24)
 ![three.js](https://img.shields.io/badge/three.js-r160_(vendored)-1a1d24)
@@ -41,6 +42,8 @@ No engine, no build step, no dependencies, no downloaded assets.
 <img src="docs/phone.jpg" width="300" alt="The compact phone HUD: objective, map, power and speed, with twin thumbsticks">
 
 *On a phone the instrument list is cut to what you steer by, and the bottom of the screen belongs to your thumbs.*
+
+**[▶ Watch the 28-second demo](https://github.com/winchxyz/moon-rover/releases/download/v1.0/regolith-demo.mp4)** — 1280×720, with sound.
 </div>
 
 ---
@@ -133,6 +136,7 @@ configuration.
 | `E` | Interact (hold) |
 | `F` | Headlights |
 | `C` | Cycle camera · `P` photo mode |
+| `K` | Save the current frame as a PNG |
 | `Tab` | Field codex |
 | `Esc` | Pause / systems |
 | `H` | Toggle HUD |
@@ -404,7 +408,18 @@ by default; the release server accepts no writes of any kind.
 
 `window.REGOLITH` exposes the running app, plus `REGOLITH.tick(dt)` to advance a
 single frame by hand — which is how every screenshot in this README was taken,
-and how the demo video was rendered frame by frame.
+and how the demo video was rendered.
+
+The demo's soundtrack is not a screen recording. Nothing here plays back an
+audio file, so there was nothing to record: the capture pass wraps
+`audio.update()` and logs the exact parameters the live engine receives on every
+frame, plus each one-shot and the frame it fired on. The whole graph is then
+rebuilt on an `OfflineAudioContext` and replayed against that log. An offline
+context's `currentTime` does not advance while you schedule against it, so
+`Audio` takes an explicit `timeBase` and every scheduling site reads `now()`
+rather than the context clock. Picture and sound come out of the same
+deterministic pass, which is why the motor pitch tracks wheels you can watch
+turning.
 
 ## Licence
 

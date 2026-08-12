@@ -15,7 +15,7 @@ import { Dust } from './world/dust.js';
 import { makeEarthTextures, makeMoonAlbedo } from './world/textures.js';
 import { Rover, DRIVE, EARTH_RTT } from './game/rover.js';
 import { CameraRig, CAM } from './game/camera.js';
-import { Game, STATION, MASSIF } from './game/gameplay.js';
+import { Game, STATION, MASSIF, OPS } from './game/gameplay.js';
 import { HUD } from './ui/hud.js';
 import { MISSIONS } from './game/lore.js';
 
@@ -304,11 +304,11 @@ function buildSettingsUI() {
     () => S.aberr ? 1 : 0, (i) => { S.aberr = i ? 1 : 0; applySettings(); persist(); });
   seg('STARFIELD', 'cinematic keeps stars visible in sunlight', ['REALISTIC', 'CINEMATIC'],
     () => S.stars > 0.5 ? 1 : 0, (i) => { S.stars = i ? 1 : 0.22; applySettings(); persist(); });
-  seg('DRIVE ENVELOPE', 'ARCADE 30 km/h · LRV 13 km/h, the real Apollo rover cruise',
+  seg('DRIVE ENVELOPE', 'LRV: 13 km/h, a 45 s drill, and a pack that lasts half an hour',
     ['ARCADE', 'LRV'],
     () => S.realistic ? 1 : 0,
     (i) => { S.realistic = !!i; applySettings(); persist();
-      App.hud.log(i ? 'DRIVE ENVELOPE — LRV PROFILE, 3.6 m/s' : 'DRIVE ENVELOPE — ARCADE, 8.4 m/s'); });
+      App.hud.log(i ? 'PROFILE — LRV · 3.6 m/s · 45 s CORE · EXTENDED PACK' : 'PROFILE — ARCADE'); });
   seg('SIGNAL DELAY', 'drive commands cross to the Moon and back before the rover acts',
     ['OFF', 'EARTH 2.6 s'],
     () => S.comms ? 1 : 0,
@@ -393,6 +393,8 @@ function applySettings() {
   // assignment retunes all of them.
   DRIVE.maxSpeed = S.realistic ? 3.6 : 8.4;
   DRIVE.commsDelay = S.comms ? EARTH_RTT : 0;
+  OPS.drillTime = S.realistic ? 45 : 4.2;
+  OPS.drainScale = S.realistic ? 0.125 : 1;
   // one knob for every instrument dimension; the stylesheet does the rest
   document.documentElement.style.setProperty('--hud-k', S.hudScale);
   if (App.audio.ready) App.audio.setVolumes(S.volSfx, S.volMusic);

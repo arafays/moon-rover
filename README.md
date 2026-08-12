@@ -155,10 +155,21 @@ panel together.
 
 Two settings make it harder and more honest:
 
-**DRIVE ENVELOPE** swaps the arcade 30 km/h for 13 km/h, the Apollo LRV's real
-cruise. Every speed threshold in the rover, camera and audio is a fraction of
-that one number, so the steering still loads up, the camera still dollies and
-the motor still sounds worked — they just do it at a real rover's pace.
+**DRIVE ENVELOPE** swaps the arcade profile for an LRV one: 13 km/h instead of
+30, a 45-second core instead of 4, and a pack that lasts half an hour instead of
+three and a half minutes. Every speed threshold in the rover, camera and audio
+is a fraction of that one top-speed number, so the steering still loads up, the
+camera still dollies and the motor still sounds worked — they just do it at a
+real rover's pace.
+
+The battery is the one number that is deliberately *not* realistic, and it is
+worth saying why rather than fudging it quietly. An LRV pack is 8.7 kWh and
+about 57 km of range; this basin is 864 m across, so a real pack would cross it
+sixty-six times. Even VIPER's much smaller 450 Wh is hours. There is no honest
+capacity that leaves power as a source of tension at this scale — so realistic
+mode does not invent one. It slows the drain eightfold, which turns power from a
+panic into planning, and moves the pressure to time, where the slow drive, the
+slow drill and the signal delay already put it.
 
 **SIGNAL DELAY** puts you where a Lunokhod driver actually sat. Drive commands
 cross to the Moon and the picture comes back: 1.28 s each way, 2.56 s before you

@@ -18,7 +18,24 @@ const SCAN_RANGE = 78;
 const SCAN_COST = 4.0;
 const SCAN_TIME = 2.1;
 const SCAN_COOL = 1.4;
-const DRILL_TIME = 4.2;
+/* Consumables profile. ARCADE is the tuned-for-tension original; REALISTIC
+   trades power panic for patience.
+
+   Drill: an Apollo ALSD core took minutes of real work, not seconds. 45 s is
+   still compressed — a truthful figure would be most of a session — but it is
+   long enough that you park, commit, and watch the bit go down.
+
+   Power: this is the one place where being realistic makes the game WORSE, so
+   it is worth writing down rather than quietly fudging. An LRV pack is 8.7 kWh
+   and ~57 km of range; this map is 864 m across, so a real pack would cross it
+   66 times. Even VIPER's much smaller 450 Wh is hours. There is no honest
+   capacity that leaves power as a source of tension at this scale.
+   So realistic mode does not pretend: it slows the drain by 8x, which takes a
+   full pack from 3.5 minutes of hard driving to about half an hour. Power stops
+   being a panic and becomes planning — which is what it actually is on a real
+   rover — and the pressure moves to time instead, where the slow drive, the
+   slow drill and the 2.6 s delay already put it. */
+export const OPS = { drillTime: 4.2, drainScale: 1 };
 const DRILL_COST = 9.0;
 const RELAY_MIN_H = 10;
 const RELAY_SPACING = 95;
@@ -333,7 +350,7 @@ export class Game {
     /* ---- drill ---- */
     if (this.drill.active) {
       this.drill.t += dt;
-      this.power -= DRILL_COST / DRILL_TIME * dt;
+      this.power -= DRILL_COST / OPS.drillTime * dt;
       const fx = this.rover.armTarget.x, fz = this.rover.armTarget.z;
       const fy = this.terrain.heightAt(fx, fz);
       if (Math.random() < dt * 55) {
@@ -345,7 +362,7 @@ export class Game {
       if (this.rover.vel.length() > 1.2) {
         this.drill.active = false; this.rover.drilling = false;
         this.log('DRILL CYCLE ABORTED — CHASSIS MOVED', 'warn'); this.audio.ui('bad');
-      } else if (this.drill.t >= DRILL_TIME) {
+      } else if (this.drill.t >= OPS.drillTime) {
         this.drill.active = false; this.rover.drilling = false;
         this._finishDrill();
       }
@@ -364,6 +381,7 @@ export class Game {
     drain += this.rover.motorLoad * 0.42;
     drain += this.rover.lampPower * 0.14;
     if (this.heat < -30) drain += 0.22;                 // survival heaters
+    drain *= OPS.drainScale;
     this.power = clamp(this.power + (charge - drain) * dt, 0, 100);
     // A flat pack now costs you the drive, not just the instruments.
     this.rover.powerScale = POWER_FLOOR + (1 - POWER_FLOOR) * clamp(this.power / POWER_KNEE, 0, 1);

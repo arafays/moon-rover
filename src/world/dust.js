@@ -180,4 +180,32 @@ export class Dust {
   }
 
   clear() { this.n = 0; this.geo.setDrawRange(0, 0); }
+
+  /** Resize the particle pool for a new quality tier. Grains in flight are
+      kept — they are ballistic and mid-parabola, and popping them all at once
+      is more visible than the budget change itself. */
+  setMax(max) {
+    if (max === this.MAX) return;
+    const keep = Math.min(this.n, max);
+    const grow = (old, stride) => {
+      const a = new Float32Array(max * stride);
+      a.set(old.subarray(0, keep * stride));
+      return a;
+    };
+    this.pos = grow(this.pos, 3);
+    this.vel = grow(this.vel, 3);
+    this.life = grow(this.life, 1);
+    this.maxLife = grow(this.maxLife, 1);
+    this.norm = grow(this.norm, 1);
+    this.seed = grow(this.seed, 1);
+    this.tint = grow(this.tint, 1);
+    this.MAX = max;
+    this.n = keep;
+    this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+    this.geo.setAttribute('aVel', new THREE.BufferAttribute(this.vel, 3));
+    this.geo.setAttribute('aLife', new THREE.BufferAttribute(this.norm, 1));
+    this.geo.setAttribute('aSeed', new THREE.BufferAttribute(this.seed, 1));
+    this.geo.setAttribute('aTint', new THREE.BufferAttribute(this.tint, 1));
+    this.geo.setDrawRange(0, keep);
+  }
 }

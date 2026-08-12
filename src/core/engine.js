@@ -21,22 +21,22 @@ export const QUALITY = {
   low: {
     name: 'LOW', maxDpr: 1.5, pixels: 0.85e6, clipM: 88, clipLevels: 7, clipCell: 0.28,
     stars: 2500, boulders: 420, trailRes: 1024, sunRes: 512, sunSteps: 36, dentRes: 2048,
-    shadow: 0, bloom: false, msaa: 0, dust: 500, aniso: 2
+    shadow: 0, bloom: false, msaa: 0, dust: 500
   },
   medium: {
     name: 'MEDIUM', maxDpr: 1.75, pixels: 1.6e6, clipM: 128, clipLevels: 8, clipCell: 0.20,
     stars: 6000, boulders: 1000, trailRes: 2048, sunRes: 768, sunSteps: 52, dentRes: 2048,
-    shadow: 1024, bloom: true, msaa: 0, dust: 1200, aniso: 4
+    shadow: 1024, bloom: true, msaa: 0, dust: 1200
   },
   high: {
     name: 'HIGH', maxDpr: 2, pixels: 2.4e6, clipM: 160, clipLevels: 9, clipCell: 0.16,
     stars: 11000, boulders: 1500, trailRes: 4096, sunRes: 1024, sunSteps: 76, dentRes: 4096,
-    shadow: 2048, bloom: true, msaa: 4, dust: 2200, aniso: 8
+    shadow: 2048, bloom: true, msaa: 4, dust: 2200
   },
   ultra: {
     name: 'ULTRA', maxDpr: 2, pixels: 4.2e6, clipM: 192, clipLevels: 9, clipCell: 0.13,
     stars: 16000, boulders: 2200, trailRes: 4096, sunRes: 1536, sunSteps: 96, dentRes: 4096,
-    shadow: 4096, bloom: true, msaa: 4, dust: 3200, aniso: 16
+    shadow: 4096, bloom: true, msaa: 4, dust: 3200
   }
 };
 
@@ -206,7 +206,14 @@ export class Engine {
       minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
       colorSpace: THREE.LinearSRGBColorSpace
     });
-    if (this.composer) this.composer.dispose();
+    // EffectComposer.dispose() frees its own two targets and nothing else.
+    // UnrealBloomPass carries a mip chain of eleven more, so rebuilding the
+    // composer without walking the passes leaks eleven render targets every
+    // time the quality tier changes — which used to be rare enough not to show.
+    if (this.composer) {
+      for (const p of this.composer.passes) p.dispose?.();
+      this.composer.dispose();
+    }
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     // Threshold sits above a sunlit white radiator on purpose: at 0.72 the

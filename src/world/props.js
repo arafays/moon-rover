@@ -111,6 +111,11 @@ function rockMaterial() {
   return m;
 }
 
+/* The field is always placed at the densest tier's count so that lowering the
+   tier hides a suffix rather than re-rolling the scatter. Keep in step with
+   QUALITY.ultra.boulders in core/engine.js. */
+const MAX_BOULDERS = 2200;
+
 export class Props {
   constructor(scene, terrain, quality) {
     this.scene = scene;
@@ -136,13 +141,21 @@ export class Props {
       { geo: boulderGeo(9.1, 2), min: 0.30, max: 1.10, share: 0.32 },
       { geo: boulderGeo(13.7, 2), min: 0.18, max: 0.60, share: 0.38 }
     ];
-    const N = this.quality.boulders;
+    /* Always place the ULTRA field, then show a prefix of it. Density is a
+       render knob, but a boulder is also a collider — re-rolling the scatter
+       when the tier changes would slide rocks around a player who is driving
+       between them, and could drop one inside the rover. Placing once and
+       moving only `count` makes every tier a strict subset of the next. */
+    const N = MAX_BOULDERS;
     const dummy = new THREE.Object3D();
     this.boulderMeshes = [];
+    this._boulderRocks = [];      // per-variant collider lists, in draw order
 
     for (let vi = 0; vi < variants.length; vi++) {
       const V = variants[vi];
       const per = Math.ceil(N * V.share);
+      const rocks = [];
+      this._boulderRocks.push(rocks);
       const im = new THREE.InstancedMesh(V.geo, this.rockMat, per);
       im.castShadow = true; im.receiveShadow = true;
       im.frustumCulled = false;
@@ -168,14 +181,35 @@ export class Props {
         dummy.scale.set(size * (0.8 + rng() * 0.4), size * (0.7 + rng() * 0.4), size * (0.8 + rng() * 0.4));
         dummy.updateMatrix();
         im.setMatrixAt(k, dummy.matrix);
-        if (size > 1.05) this.colliders.push({ x, z, r: size * 0.72, kind: 'rock' });
+        rocks.push(size > 1.05 ? { x, z, r: size * 0.72, kind: 'rock' } : null);
         k++;
       }
-      im.count = k;
+      im.userData.placed = k;
+      im.userData.share = V.share;
       im.instanceMatrix.needsUpdate = true;
       this.group.add(im);
       this.boulderMeshes.push(im);
     }
+    this.setBoulderDensity(this.quality.boulders);
+  }
+
+  /** Show the first N boulders of the field and collide with exactly those.
+      Anything the tier hides must not be solid, or you would be stopped by a
+      rock that is not there. */
+  setBoulderDensity(N) {
+    this.colliders = this.colliders.filter(c => c.kind !== 'rock');
+    for (let vi = 0; vi < this.boulderMeshes.length; vi++) {
+      const im = this.boulderMeshes[vi];
+      const show = Math.min(im.userData.placed, Math.ceil(N * im.userData.share));
+      im.count = show;
+      const rocks = this._boulderRocks[vi];
+      for (let i = 0; i < show; i++) if (rocks[i]) this.colliders.push(rocks[i]);
+    }
+  }
+
+  setQuality(q) {
+    this.quality = q;
+    this.setBoulderDensity(q.boulders);
   }
 
   /* ============================================================

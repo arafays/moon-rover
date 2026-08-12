@@ -154,6 +154,18 @@ export class Sky {
     this.group.add(this.stars);
   }
 
+  /** Restar the sky at a new tier. Purely visual — nothing collides with a
+      star — so this just rebuilds the point cloud. starIntensity is re-applied
+      from update() every frame, so the new material picks it up on its own. */
+  setQuality(q) {
+    if (q.stars === this.quality.stars) { this.quality = q; return; }
+    this.quality = q;
+    this.group.remove(this.stars);
+    this.stars.geometry.dispose();
+    this.stars.material.dispose();
+    this._buildStars();
+  }
+
   /* ---------------- the sun ---------------- */
   _buildSun() {
     const mat = new THREE.ShaderMaterial({

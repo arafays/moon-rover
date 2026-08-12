@@ -34,12 +34,21 @@ const App = {
 };
 
 function guessQuality() {
-  const mem = navigator.deviceMemory || 4;
+  // deviceMemory is Chromium-only, so on Safari and Firefox the core count has
+  // to carry the guess by itself rather than silently reading as 4 GB.
+  const mem = navigator.deviceMemory || 0;
   const cores = navigator.hardwareConcurrency || 4;
-  if (matchMedia('(pointer: coarse)').matches) return 'low';
-  if (mem >= 8 && cores >= 8) return 'high';
-  if (mem >= 4 && cores >= 4) return 'medium';
-  return 'low';
+  let tier;
+  if (cores >= 8 && (mem === 0 || mem >= 8)) tier = 2;
+  else if (cores >= 6 || mem >= 4) tier = 1;
+  else tier = 0;
+  /* A coarse pointer means a touch screen, not a slow chip — an iPad Pro and a
+     touchscreen laptop both report it. This used to return LOW outright, which
+     pinned every tablet to seven clipmap levels and a 0.5 m excavation grid no
+     matter what the player picked. Take one tier off for the thinner thermal
+     budget instead, and let the frame governor do the rest. */
+  if (matchMedia('(pointer: coarse)').matches) tier = Math.max(0, tier - 1);
+  return ['low', 'medium', 'high'][tier];
 }
 
 /* ============================================================
@@ -284,7 +293,7 @@ function buildSettingsUI() {
   const rng = (label, note, min, max, step, get, set) => rows.push(
     { type: 'rng', label, note, min, max, step, get, set });
 
-  seg('RENDER QUALITY', 'clipmap density, shadows, particle budget',
+  seg('RENDER QUALITY', 'clipmap, shadows, excavation grid, boulders, particles',
     ['LOW', 'MEDIUM', 'HIGH', 'ULTRA'],
     () => ['low', 'medium', 'high', 'ultra'].indexOf(S.quality),
     // setQuality rebuilds the composer, so the final-pass uniforms are new
@@ -292,6 +301,7 @@ function buildSettingsUI() {
     (i) => {
       S.quality = ['low', 'medium', 'high', 'ultra'][i];
       App.engine.setQuality(S.quality);
+      applyWorldQuality();
       applySettings();
       persist();
     });
@@ -376,6 +386,23 @@ function saveFrame() {
   } catch (e) {
     App.hud.log('FRAME CAPTURE FAILED', 'bad');
   }
+}
+
+/* Push a tier change through to everything that sized itself from it at boot.
+   Engine.setQuality only re-fits the framebuffer, the shadow map and the
+   composer; the clipmap, the excavation grid, the trail buffer, the sun mask,
+   the boulder density and the dust budget all live out here and used to be
+   frozen at whatever guessQuality picked on the first run. On a tablet that
+   meant RENDER QUALITY moved almost nothing.
+
+   Cheap because bakeTerrain takes no quality argument: the height field is
+   tier-independent, so none of this re-bakes the basin. */
+function applyWorldQuality() {
+  const q = App.engine.quality;
+  App.terrain?.setQuality(q);
+  App.props?.setQuality(q);
+  App.sky?.setQuality(q);
+  App.dust?.setMax(q.dust);
 }
 
 function applySettings() {

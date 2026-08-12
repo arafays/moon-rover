@@ -335,11 +335,23 @@ it, CPU-authoritative and uploaded as small dirty rects. Only the touched rectan
 tracked as region lists rather than a growing union — the union version reached
 1.7 M cells and 62 ms/frame before it was replaced.
 
+The grid is sized by the quality tier, so changing tier has to move it. It is
+resampled rather than cleared: the field holds your own ruts and drill pits, and
+throwing them away on a settings change would be the worse bug. A 4096 → 2048
+step costs about 2 mm of rut depth, which is the honest price of halving the
+grid and does not compound while you stay put.
+
 ### Boulders
 
 Instanced, with a triplanar procedural surface: mottled plagioclase, chipping
 normals that fade with distance so pebbles do not alias, and regolith dust
 settling on every up-face.
+
+The field is always scattered at the densest tier's count and the lower tiers
+draw a prefix of it, so a boulder is in the same place at every setting. The
+alternative — re-rolling the scatter per tier — slides rocks around a player who
+is driving between them, and a boulder is a collider, not just a sprite. What
+the tier hides is also un-collided, so nothing invisible can stop you.
 
 ### Post
 
@@ -364,12 +376,18 @@ if (over > 1) px /= Math.sqrt(over);
 
 On top of that a governor watches a rolling frame time and trades resolution for
 smoothness between 100 % and 62 % before you notice, giving it back when there is
-headroom. A quality tier is guessed from the device on first run — anything with
-a coarse pointer gets LOW, everything else goes on reported memory and core
-count — and shadow map size, MSAA and particle budgets follow from that tier
-rather than being probed themselves. The tier is what you override under `Esc`;
-MSAA additionally stays off above 3.2 Mpx of framebuffer whatever the tier asks
-for.
+headroom. A quality tier is guessed once from the device — reported memory and
+core count, with a touch screen costing one tier rather than pinning you to the
+bottom — and everything else follows from it: clipmap density, shadow map size,
+MSAA, the excavation grid, the trail and sun-mask buffers, boulder density and
+the dust budget.
+
+Changing it under `Esc` re-fits all of them live. That costs 11–16 ms, or
+130–310 ms when the excavation grid has to change size and be resampled.
+Nothing re-bakes the basin — the height field does not depend on the tier, so
+the expensive half of the load is reusable, which is the only reason a tier
+change can be a hitch rather than a reload. MSAA stays off above 3.2 Mpx of
+framebuffer whatever the tier asks for.
 
 ---
 

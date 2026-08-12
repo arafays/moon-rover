@@ -771,8 +771,18 @@ export class Terrain {
      clipmap
      ============================================================ */
   buildClipmap() {
-    this.group = new THREE.Group();
-    this.group.frustumCulled = false;
+    // Reuse the group across rebuilds: main adds it to the scene once at boot,
+    // so handing back a fresh one on a quality change would leave the old rings
+    // drawn and the new ones orphaned.
+    if (this.group) {
+      for (const L of this.levels) {
+        this.group.remove(L.mesh);
+        L.mesh.geometry.dispose(); L.mesh.material.dispose();
+      }
+    } else {
+      this.group = new THREE.Group();
+      this.group.frustumCulled = false;
+    }
     this.levels = [];
     const M = this.quality.clipM;          // cells per side
     const L = this.quality.clipLevels;
@@ -801,8 +811,17 @@ export class Terrain {
     for (let i = 0; i < L; i++) {
       const cell = c0 * Math.pow(2, i);
       const geo = grid(M, M, i === 0 ? 0 : M / 4 - 2);   // 2-cell overlap hides any snap mismatch
-      const mat = this.material.clone();
-      mat.uniforms = Object.assign({}, this.uniforms);   // share the value objects
+      // Built directly rather than cloned: ShaderMaterial.clone() deep-copies
+      // the uniforms, which warns on every render-target texture in the set
+      // (uTrail, uSunMask) and then has its work thrown away by the line below.
+      // Harmless at boot, nine warnings a time once the tier can change.
+      const mat = new THREE.ShaderMaterial({
+        uniforms: Object.assign({}, this.uniforms),      // share the value objects
+        vertexShader: this.material.vertexShader,
+        fragmentShader: this.material.fragmentShader,
+        defines: this.material.defines,
+        fog: false
+      });
       mat.uniforms.uCell = { value: cell };
       // Sag rises with cell size so a coarser ring always sits UNDER the finer
       // one it overlaps, hiding both the LOD step and any snapping mismatch.
@@ -1045,6 +1064,112 @@ export class Terrain {
   }
 
   /* ============================================================
+     live quality change
+     ============================================================
+     Re-fit everything the tier sizes, without re-baking the basin: bakeTerrain
+     takes no quality argument, so the height field is tier-independent and the
+     expensive half of the load is reusable. A tier change costs a hitch, not a
+     reload.
+
+     One rule holds this together: uniform VALUES are mutated in place and the
+     wrapper objects are never replaced. Every clipmap ring shares these exact
+     wrappers (buildClipmap does Object.assign to share them), and the dust holds
+     uSunDir directly — swapping a wrapper would silently unwire both. */
+  setQuality(q) {
+    const prev = this.quality;
+    this.quality = q;
+
+    if (q.dentRes !== this.dentRes) this._resizeDent(q.dentRes);
+    if (q.trailRes !== prev.trailRes) this._resizeTrail(q.trailRes);
+    if (q.sunRes !== prev.sunRes) {
+      this.sunRT.dispose();
+      this.sunRT = new THREE.WebGLRenderTarget(q.sunRes, q.sunRes, {
+        format: THREE.RedFormat, type: THREE.UnsignedByteType,
+        minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false
+      });
+      this.uniforms.uSunMask.value = this.sunRT.texture;
+    }
+    this.sunMat.uniforms.uSteps.value = q.sunSteps;
+    // The mask is derived from the height field and the sun angle, so there is
+    // nothing to preserve — just force update() to redraw it next frame.
+    this._lastSun.set(9, 9, 9);
+
+    if (q.clipM !== prev.clipM || q.clipLevels !== prev.clipLevels || q.clipCell !== prev.clipCell) {
+      this.buildClipmap();
+    }
+  }
+
+  /** Reallocate the excavation field, resampling what is already dug into it.
+      The field is the player's own ruts and drill pits; dropping them on a
+      settings change would be a worse bug than the one this fixes. */
+  _resizeDent(DR) {
+    const src = this.dent, SR = this.dentRes;
+    const out = new Float32Array(DR * DR);
+    // Both grids cover the same ±DENT_EXT, so texel centres map linearly.
+    const ratio = SR / DR;
+    for (let z = 0; z < DR; z++) {
+      const sz = (z + 0.5) * ratio - 0.5;
+      const z0 = Math.floor(sz), fz = sz - z0;
+      const za = clamp(z0, 0, SR - 1) * SR, zb = clamp(z0 + 1, 0, SR - 1) * SR;
+      for (let x = 0; x < DR; x++) {
+        const sx = (x + 0.5) * ratio - 0.5;
+        const x0 = Math.floor(sx), fx = sx - x0;
+        const xa = clamp(x0, 0, SR - 1), xb = clamp(x0 + 1, 0, SR - 1);
+        const h0 = src[za + xa] + (src[za + xb] - src[za + xa]) * fx;
+        const h1 = src[zb + xa] + (src[zb + xb] - src[zb + xa]) * fx;
+        out[z * DR + x] = h0 + (h1 - h0) * fz;
+      }
+    }
+
+    this.dent = out;
+    this.dentRes = DR;
+    this.dentHalf = new Uint16Array(DR * DR);
+    const half = THREE.DataUtils.toHalfFloat;
+    for (let i = 0; i < out.length; i++) this.dentHalf[i] = half(out[i]);
+
+    this.texDent.dispose();
+    this.texDent = new THREE.DataTexture(this.dentHalf, DR, DR, THREE.RedFormat, THREE.HalfFloatType);
+    this.texDent.magFilter = this.texDent.minFilter =
+      this.manualBilinear ? THREE.NearestFilter : THREE.LinearFilter;
+    this.texDent.generateMipmaps = false;
+    // Upload the whole field as one texture rather than replaying it through
+    // the scratch blitter: copyTextureToTexture needs a destination that is
+    // already resident, and a fresh DataTexture is not until three uploads it.
+    this.texDent.needsUpdate = true;
+
+    this.uniforms.uDent.value = this.texDent;
+    this.uniforms.uTexRes.value.w = DR;
+    // Both lists index the grid that just went away.
+    this._marks.length = 0;
+    this._slumps.length = 0;
+  }
+
+  /** Reallocate the wheel-track buffer, copying the existing tracks across.
+      Tracks are the record of where you have been; a settings change should
+      not erase them. */
+  _resizeTrail(TR) {
+    const old = this.trailRT;
+    this.trailRT = new THREE.WebGLRenderTarget(TR, TR, {
+      format: THREE.RedFormat, type: THREE.UnsignedByteType,
+      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false
+    });
+    const quad = new THREE.Mesh(
+      new THREE.PlaneGeometry(this.TRAIL_EXT, this.TRAIL_EXT),
+      new THREE.MeshBasicMaterial({ map: old.texture, depthTest: false, depthWrite: false, toneMapped: false })
+    );
+    quad.frustumCulled = false;
+    const sc = new THREE.Scene(); sc.add(quad);
+    const r = this.renderer, p = r.getRenderTarget();
+    r.setRenderTarget(this.trailRT);
+    r.setClearColor(0x000000, 1); r.clear(true, false, false);
+    r.render(sc, this.trailCam);
+    r.setRenderTarget(p);
+    quad.geometry.dispose(); quad.material.dispose();
+    old.dispose();
+    this.uniforms.uTrail.value = this.trailRT.texture;
+  }
+
+  /* ============================================================
      per-frame
      ============================================================ */
   update(dt, camera, sunDir) {
@@ -1072,7 +1197,8 @@ export class Terrain {
 
   dispose() {
     this.texMacro.dispose(); this.texFar.dispose(); this.texDetail.dispose();
-    this.texDent.dispose(); this.scratch.dispose();
+    this.texDent.dispose();
+    for (const s of this.scratches) s.tex.dispose();
     this.trailRT.dispose(); this.sunRT.dispose();
     for (const L of this.levels) { L.mesh.geometry.dispose(); L.mesh.material.dispose(); }
   }
